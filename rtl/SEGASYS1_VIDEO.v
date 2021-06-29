@@ -1,15 +1,15 @@
 // Copyright (c) 2017,19 MiSTer-X
 
-`define EN_SPRITE (ROMAD[17:16]==2'b01)				// $10000-$1FFFF
+`define EN_SPRITE (ROMAD[18:17]==2'b01)		// $20000-$3FFFF
 
-`define EN_TILE00	(ROMAD[17:13]==5'b10_000)			// $20000-$21FFF
-`define EN_TILE01 (ROMAD[17:13]==5'b10_001)			// $22000-$23FFF
-`define EN_TILE02 (ROMAD[17:13]==5'b10_010)			// $24000-$25FFF
-`define EN_TILE10 (ROMAD[17:13]==5'b10_011)			// $26000-$27FFF
-`define EN_TILE11 (ROMAD[17:13]==5'b10_100)			// $28000-$29FFF
-`define EN_TILE12 (ROMAD[17:13]==5'b10_101)			// $2A000-$2BFFF
+`define EN_TILE00 (ROMAD[18:14]==6'b100_00)	// $40000-$43FFF
+`define EN_TILE10 (ROMAD[18:14]==6'b100_01)	// $44000-$47FFF
+`define EN_TILE01 (ROMAD[18:14]==6'b100_10)	// $48000-$4bFFF
+`define EN_TILE11 (ROMAD[18:14]==6'b100_11)	// $4c000-$4fFFF
+`define EN_TILE02 (ROMAD[18:14]==6'b101_00)	// $50000-$53FFF
+`define EN_TILE12 (ROMAD[18:14]==6'b101_01)	// $54000-$57FFF
 
-`define EN_CLUT	(ROMAD[17:8]==10'b10_1100_0000) 	// $2C000-$2C0FF
+`define EN_CLUT	(ROMAD[18:8]==11'b101_1000_0000)// $58000-$580FF
 
 
 module SEGASYS1_VIDEO
@@ -24,7 +24,7 @@ module SEGASYS1_VIDEO
 	
 	output			VBLK,
 	output			PCLK_EN,
-	output   [7:0]	RGB8,
+	output   [11:0]	RGB,
 
 	input				PALDSW,
 	input	  [15:0]	cpu_ad,
@@ -47,12 +47,13 @@ module SEGASYS1_VIDEO
 
 reg [2:0] clkdiv;
 always @(posedge VCLKx8) clkdiv <= clkdiv+1'd1;
+
 wire VCLKx4    = clkdiv[0];
 wire VCLK_EN   = !clkdiv;
 wire VCLKx4_EN = !clkdiv[0];
 
 assign PCLK_EN = VCLK_EN;
-	
+
 // CPU Interface
 wire [10:0] palno;
 wire  [7:0] palout;
@@ -108,7 +109,7 @@ VIDHVGEN hv(
 wire [10:0] SPRPX;
 wire [17:0] sprchad;
 wire  [7:0] sprchdt;
-DLROM #(16,8) sprchr(VCLKx8,sprchad,sprchdt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SPRITE );
+DLROM #(17,8) sprchr(VCLKx8,sprchad,sprchdt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SPRITE );
 SEGASYS1_SPRITE sprite(
 	.VCLKx8(VCLKx8),
 	.VCLKx4(VCLKx4),
@@ -123,11 +124,10 @@ SEGASYS1_SPRITE sprite(
 
 // BG Scanline Generator
 wire [10:0] BG0PX, BG1PX;
-wire [13:0]	tile0ad, tile1ad;
+wire [14:0] tile0ad, tile1ad;
+reg  [14:0] tilead;
 wire [23:0] tiledt;
-
 reg  [23:0] tile0dt, tile1dt, tile0dt_r;
-reg  [13:0]	tilead;
 always @(posedge VCLKx8) begin
 	if (VCLK_EN) begin
 		if (HPOS[2:0] == 3'b000) begin
@@ -149,6 +149,8 @@ BGGEN bg1(VCLKx8,VCLK_EN,BG1HP,BG1VP,vram1ad,vram1dt,tile1ad,tile1dt,BG1PX);
 
 // Color Mixer & RGB Output
 wire [7:0] cltidx,cltval;
+wire [7:0] color;
+
 DLROM #(8,8) clut(VCLKx8, cltidx, cltval, ROMCL,ROMAD,ROMDT,ROMEN & `EN_CLUT );
 COLMIX cmix(
 	VCLKx8, VCLK_EN,
@@ -157,8 +159,31 @@ COLMIX cmix(
 	cltidx, cltval,
 	mixcoll, mixcoll_ad,
 	palno, palout,
-	RGB8
+	color
 );
+
+// Palette
+`define EN_PALR		(ROMAD[18:8]==11'b101_1000_0001)	// $58100
+`define EN_PALG		(ROMAD[18:8]==11'b101_1000_0010)	// $58200
+`define EN_PALB		(ROMAD[18:8]==11'b101_1000_0011)	// $58300
+
+wire [3:0] r,g,b;
+
+DLROM #(8,8) pal_r(VCLKx8, color, r, ROMCL,ROMAD,ROMDT,ROMEN & `EN_PALR );
+DLROM #(8,8) pal_g(VCLKx8, color, g, ROMCL,ROMAD,ROMDT,ROMEN & `EN_PALG );
+DLROM #(8,8) pal_b(VCLKx8, color, b, ROMCL,ROMAD,ROMDT,ROMEN & `EN_PALB );
+
+// detect color proms while transfering them
+reg has_color_prom = 0;
+always @(posedge ROMCL)
+	if (ROMEN)
+		if(`EN_PALR | `EN_PALG | `EN_PALB)
+			has_color_prom <= has_color_prom | ~(!ROMDT);
+
+assign RGB = has_color_prom ? {b,g,r} :
+                              {color[7:6], color[7:6],
+			       color[5:3], color[5],
+			       color[2:0], color[2]};
 
 endmodule
 
@@ -360,7 +385,7 @@ endmodule
 module TileChrROM
 (
 	input				clk,
-	input  [13:0]	adr,
+	input  [14:0]	adr,
 	output [23:0]	dat,
 	
 	input				ROMCL,		// Downloaded ROM image
@@ -370,15 +395,15 @@ module TileChrROM
 );
 
 wire [23:0]	t0dt,t1dt;
-assign dat = adr[13] ? t1dt : t0dt;
+assign dat = adr[14] ? t1dt : t0dt;
 
-DLROM #(13,8) t00( clk, adr[12:0], t0dt[7:0]  ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE00 );
-DLROM #(13,8) t01( clk, adr[12:0], t0dt[15:8] ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE01 );
-DLROM #(13,8) t02( clk, adr[12:0], t0dt[23:16],ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE02 );
+DLROM #(14,8) t00( clk, adr[13:0], t0dt[7:0]  ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE00 );
+DLROM #(14,8) t01( clk, adr[13:0], t0dt[15:8] ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE01 );
+DLROM #(14,8) t02( clk, adr[13:0], t0dt[23:16],ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE02 );
 
-DLROM #(13,8) t10( clk, adr[12:0], t1dt[7:0]  ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE10 );
-DLROM #(13,8) t11( clk, adr[12:0], t1dt[15:8] ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE11 );
-DLROM #(13,8) t12( clk, adr[12:0], t1dt[23:16],ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE12 );
+DLROM #(14,8) t10( clk, adr[13:0], t1dt[7:0]  ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE10 );
+DLROM #(14,8) t11( clk, adr[13:0], t1dt[15:8] ,ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE11 );
+DLROM #(14,8) t12( clk, adr[13:0], t1dt[23:16],ROMCL,ROMAD,ROMDT,ROMEN & `EN_TILE12 );
 
 endmodule
 
@@ -558,7 +583,7 @@ module COLMIX
 	output [10:0]	palno,
 	input   [7:0]  palout,
 	
-	output reg [7:0] RGB8
+	output reg [7:0] color
 );
 
 assign cltidx = { 1'b0,
@@ -582,7 +607,9 @@ wire [10:0] palno_d = {HPOS[7],VPOS[7:2],HPOS[6:3]};
 
 assign palno = PALDSW ? palno_d : palno_i;
 
-always @(posedge CLK ) if (VCLK_EN) RGB8 <= palout;
+always @(posedge CLK )
+	if (VCLK_EN)
+		color <= palout;
 
 endmodule
 

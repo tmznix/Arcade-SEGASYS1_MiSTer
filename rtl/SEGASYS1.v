@@ -18,7 +18,7 @@ module SEGASYSTEM1
 	input   [8:0]  PH,         // PIXEL H
 	input   [8:0]  PV,         // PIXEL V
 	output        PCLK_EN,
-	output  [7:0]	POUT, 	   // PIXEL OUT
+	output  [11:0]	POUT, 	   // PIXEL OUT
 
 	output  [15:0] SOUT,			// Sound Out (PCM)
 
@@ -70,11 +70,11 @@ SEGASYS1_MAIN Main (
 );
 
 // Video
-wire [7:0] OPIX;
+wire [11:0] OPIX;
 SEGASYS1_VIDEO Video (
 	.RESET(reset),.VCLKx8(clk48M),
 	.PH(PH),.PV(PV),.VFLP(VIDMD[7]),
-	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB8(OPIX),.PALDSW(1'b0),
+	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB(OPIX),.PALDSW(1'b0),
 
 	.cpu_ad(CPUAD),.cpu_wr(CPUWR),.cpu_dw(CPUDO),
 	.cpu_rd(VIDCS),.cpu_dr(VIDDO),
@@ -84,7 +84,7 @@ SEGASYS1_VIDEO Video (
 	.PAUSE_N(PAUSE_N),
 	.HSAD(HSAD),.HSDO(HSDO_VIDEO),.HSDI(HSDI),.HSWE(HSWE_VIDEO & HSWE)
 );
-assign POUT = VIDMD[4] ? 8'd0 : OPIX;
+assign POUT = VIDMD[4] ? 12'd0 : OPIX;
 
 // Sound
 SEGASYS1_SOUND Sound(

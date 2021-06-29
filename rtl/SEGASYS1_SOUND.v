@@ -1,6 +1,6 @@
 // Copyright (c) 2017,19 MiSTer-X
 
-`define EN_SCPU	(ROMAD[17:13]==5'b00_110)	// $0C000-$0DFFF
+`define EN_SCPU	(ROMAD[18:15]==4'b000_0) // $0-$7fff
 
 module SEGASYS1_SOUND
 (
@@ -63,7 +63,7 @@ wire  [7:0]		rom_dt;		// ROM
 wire  [7:0]		ram_do;		// RAM
 wire  [7:0]		comlatch;	// Sound Command Latch
 
-DLROM #(13,8) subir( clk48M, cpu_ad[12:0], rom_dt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SCPU );
+DLROM #(15,8) subir( clk48M, cpu_ad[14:0], rom_dt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SCPU );
 SRAM_2048 wram( clk48M, cpu_ad[10:0], ram_do, cpu_wr_ram, cpu_do );
 
 dataselector3 scpudisel(

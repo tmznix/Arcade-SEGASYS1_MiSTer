@@ -6,9 +6,9 @@ module HVGEN
 	output  [8:0]		VPOS,
 	input         		CLK,
 	input         		PCLK_EN,
-	input	 [14:0]		iRGB,
+	input	 [11:0]		iRGB,
 
-	output reg [14:0]	oRGB,
+	output reg [11:0]	oRGB,
 	output    			HBLK,
 	output reg			VBLK = 1,
 	output reg			HSYN = 1,
@@ -16,8 +16,8 @@ module HVGEN
 
 	input					H240,
 
-	input   [8:0]		HOFFS,
-	input	  [8:0]		VOFFS
+	input signed [3:0]		HOFFS,
+	input signed [3:0]		VOFFS
 );
 
 reg [8:0] hcnt = 0;

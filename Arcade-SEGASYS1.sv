@@ -222,25 +222,27 @@ pll pll
 
 ///////////////////////////////////////////////////
 
-wire	[31:0]	status;
-wire	[1:0]		buttons;
-wire				forced_scandoubler;
-wire				direct_video;
+wire    [31:0]  status;
+wire     [1:0]  buttons;
+wire    [10:0]  ps2_key;
 
-wire				ioctl_download;
-wire				ioctl_upload;
-wire				ioctl_wr;
-wire	[7:0]		ioctl_index;
-wire	[24:0]	ioctl_addr;
-wire	[7:0]		ioctl_dout;
-wire	[7:0]		ioctl_din;
+wire            forced_scandoubler;
+wire            direct_video;
 
-wire	[15:0]	joy1, joy2;
-wire	[15:0]	joy = joy1 | joy2;
-wire	[8:0]		spinner_0, spinner_1;
-wire	[24:0]	ps2_mouse;
+wire            ioctl_download;
+wire            ioctl_upload;
+wire            ioctl_wr;
+wire    [7:0]   ioctl_index;
+wire    [24:0]  ioctl_addr;
+wire    [7:0]   ioctl_dout;
+wire    [7:0]   ioctl_din;
 
-wire	[21:0]	gamma_bus;
+wire    [15:0]  joy1, joy2;
+wire    [15:0]  joy = joy1 | joy2;
+wire    [8:0]   spinner_0, spinner_1;
+wire    [24:0]  ps2_mouse;
+
+wire    [21:0]  gamma_bus;
 
 hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
@@ -264,6 +266,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
 
+	.ps2_key(ps2_key),
 	.ps2_mouse(ps2_mouse),
 	.joystick_0(joy1),
 	.joystick_1(joy2),
@@ -304,11 +307,11 @@ wire m_coin   = joy[11];
 wire m_pause  = joy[12];
 
 // PAUSE SYSTEM
-reg				pause;									// Pause signal (active-high)
-reg				pause_toggle = 1'b0;					// User paused (active-high)
-reg [31:0]		pause_timer;							// Time since pause
-reg [31:0]		pause_timer_dim = 31'h1C9C3800;	// Time until screen dim (10 seconds @ 48Mhz)
-reg 				dim_video = 1'b0;						// Dim video output (active-high)
+reg pause;					// Pause signal (active-high)
+reg pause_toggle = 1'b0;			// User paused (active-high)
+reg [31:0] pause_timer;				// Time since pause
+reg [31:0] pause_timer_dim = 31'h17d78400;	// Time until screen dim (10 seconds @ 40Mhz)
+reg dim_video = 1'b0;				// Dim video output (active-high)
 
 // Pause when highscore module requires access, user has pressed pause, or OSD is open and option is set
 assign pause = hs_access | pause_toggle  | (OSD_STATUS && ~status[7]);
@@ -336,9 +339,8 @@ end
 wire hblank, vblank;
 wire ce_vid;
 wire hs, vs;
-wire [2:0] r,g;
-wire [1:0] b;
-wire [7:0] rgb_out = dim_video ? {r >> 1,g >> 1, b >> 1} : {r,g,b};
+wire [3:0] r,g,b;
+wire [11:0] rgb_out = dim_video ? {r >> 1,g >> 1, b >> 1} : {r,g,b};
 
 reg ce_pix;
 always @(posedge clk_hdmi) begin
@@ -347,7 +349,7 @@ always @(posedge clk_hdmi) begin
 	ce_pix  <= old_clk & ~ce_vid;
 end
 
-arcade_video #(288,8) arcade_video
+arcade_video #(288,12) arcade_video
 (
 	.*,
 
@@ -369,7 +371,7 @@ screen_rotate screen_rotate (.*);
 
 wire			PCLK_EN;
 wire  [8:0] HPOS,VPOS;
-wire  [7:0] POUT;
+wire  [11:0] POUT;
 HVGEN hvgen
 (
 	.HPOS(HPOS),
@@ -398,6 +400,7 @@ assign AUDIO_S = 0; // unsigned PCM
 ///////////////////////////////////////////////////
 
 wire iRST = RESET | status[0] | buttons[1];
+wire [2:0] triggers = {SYSMODE[7] ? {m_trig_2, m_trig_1} : {m_trig_1, m_trig_2}, m_trig_3};
 
 reg [7:0] INP0, INP1, INP2;
 always @(posedge clk_sys) begin
@@ -412,9 +415,9 @@ always @(posedge clk_sys) begin
 		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 3'b000, m_coin};
 	end
 	else begin
-		INP0 = ~{m_left, m_right, m_up, m_down,1'd0, m_trig_2, m_trig_1, m_trig_3};
-		INP1 = ~{m_left, m_right, m_up, m_down,1'd0, m_trig_2, m_trig_1, m_trig_3};
-		INP2 = ~{2'b00, m_start2, m_start1, 3'b000, m_coin}; 
+		INP0 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
+		INP1 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
+		INP2 = ~{2'b00, m_start2, m_start1, 3'b000, m_coin};
 	end
 end
 

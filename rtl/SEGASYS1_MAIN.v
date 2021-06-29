@@ -1,8 +1,8 @@
 // Copyright (c) 2017,19 MiSTer-X
 
-`define EN_MCPU0		(ROMAD[17:15]==3'b00_0 ) 
-`define EN_MCPU8		(ROMAD[17:14]==4'b00_10) 
-`define EN_MCPUD		(ROMAD[17:15]==4'b11_0 )
+`define EN_MCPU0 (ROMAD[18:15]==4'b000_1 )
+`define EN_MCPU8 (ROMAD[18:16]==3'b001)
+`define EN_MCPUD (ROMAD[18:15]==4'b110_0 )
 
 module SEGASYS1_MAIN
 (
@@ -39,7 +39,6 @@ module SEGASYS1_MAIN
 	output [7:0]	HSDO,
 	input  [7:0]	HSDI,
 	input				HSWE
-	
 );
 
 reg [3:0] clkdiv;
@@ -94,8 +93,13 @@ wire  [7:0] rdt;
 SEGASYS1_PRGDEC decr(AXSCL,cpu_m1,CPUAD,cpu_rd_mrom0, rad,rdt, ROMCL,ROMAD,ROMDT,ROMEN);
 
 DLROM #(15,8) rom0(CLK48M, nocrypt ? CPUAD : rad, rdt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU0);	// ($0000-$7FFF encrypted)
-DLROM #(14,8) rom1(CLK48M, CPUAD,        cpu_rd_mrom1, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU8);	// ($8000-$BFFF non-encrypted)
-DLROM #(15,8) romd(CLK48M, CPUAD,        cpu_rd_mromd, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPUD);	// ($0000-$7FFF non-encrypted data)
+
+DLROM #(15,8) romd(CLK48M, CPUAD, cpu_rd_mromd, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPUD);	// ($0000-$7FFF non-encrypted data)
+
+// CPU Region $8000-$BFFF non-encrypted
+// ROM banks 0-3
+wire [1:0] cpu_bank = {VIDMD[6],VIDMD[2]};
+DLROM #(16,8) rom8(CLK48M, {cpu_bank,CPUAD[13:0]}, cpu_rd_mrom1, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU8);
 
 reg nocrypt = 0;
 always @(posedge CLK48M) if(ROMEN & `EN_MCPUD) nocrypt <= 1;
