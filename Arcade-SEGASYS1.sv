@@ -40,6 +40,7 @@ module emu
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
+	output        HDMI_FREEZE,
 
 `ifdef MISTER_FB
 	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
@@ -161,13 +162,18 @@ assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
 
-assign VGA_F1    = 0;
-assign VGA_SCALER= 0;
+assign VGA_F1 = 0;
+assign VGA_SCALER = 0;
+assign HDMI_FREEZE = 0;
+
 assign USER_OUT  = '1;
+
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
+
 assign BUTTONS   = 0;
+
 assign AUDIO_MIX = 0;
 assign FB_FORCE_BLANK = '0;
 
@@ -236,12 +242,10 @@ wire	[24:0]	ps2_mouse;
 
 wire	[21:0]	gamma_bus;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
+hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
-
-	.conf_str(CONF_STR),
 
 	.buttons(buttons),
 
@@ -432,16 +436,16 @@ reg use_mouse = 0;
 always @(posedge clk_sys) begin
 	reg old_ms;
 	reg old_sp;
-	
+
 	old_ms <= ps2_mouse[24];
 	if(old_ms ^ ps2_mouse[24]) use_mouse = 1;
-	
+
 	old_sp <= spinner_0[8];
 	if(old_sp ^ spinner_0[8]) use_mouse = 0;
 end
 
 SEGASYSTEM1 GameCore
-( 
+(
 	.clk48M(clk_sys),
 	.reset(iRST),
 
@@ -461,7 +465,7 @@ SEGASYSTEM1 GameCore
 	.ROMAD(ioctl_addr),
 	.ROMDT(ioctl_dout),
 	.ROMEN(ioctl_wr & ioctl_index==0),
-	
+
 	.PAUSE_N(~pause),
 	.HSAD(hs_address),
 	.HSDO(ioctl_din),
@@ -496,6 +500,5 @@ hiscore #(
 	.ram_write(hs_write),
 	.ram_access(hs_access)
 );
-
 
 endmodule
