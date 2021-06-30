@@ -6,7 +6,7 @@
 
 module SEGASYS1_MAIN
 (
-	input				CLK48M,
+	input				CLK40M,
 
 	input				RESET,
 
@@ -42,10 +42,10 @@ module SEGASYS1_MAIN
 );
 
 reg [3:0] clkdiv;
-always @(posedge CLK48M) clkdiv <= clkdiv+1'd1;
+always @(posedge CLK40M) clkdiv <= clkdiv+1'd1;
 wire CLK3M_EN = clkdiv[2:0] == 0;
 
-wire			AXSCL   = CLK48M;
+wire			AXSCL   = CLK40M;
 wire      CPUCL_EN = CLK3M_EN;
 
 wire  [7:0]	CPUDI;
@@ -56,7 +56,7 @@ wire	_cpu_rd, _cpu_wr;
 
 Z80IP maincpu(
 	.reset(RESET),
-	.clk(CLK48M),
+	.clk(CLK40M),
 	.clk_en(CPUCL_EN),
 	.adr(CPUAD),
 	.data_in(CPUDI),
@@ -92,22 +92,22 @@ wire  [7:0] rdt;
 
 SEGASYS1_PRGDEC decr(AXSCL,cpu_m1,CPUAD,cpu_rd_mrom0, rad,rdt, ROMCL,ROMAD,ROMDT,ROMEN);
 
-DLROM #(15,8) rom0(CLK48M, nocrypt ? CPUAD : rad, rdt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU0);	// ($0000-$7FFF encrypted)
+DLROM #(15,8) rom0(CLK40M, nocrypt ? CPUAD : rad, rdt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU0);	// ($0000-$7FFF encrypted)
 
-DLROM #(15,8) romd(CLK48M, CPUAD, cpu_rd_mromd, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPUD);	// ($0000-$7FFF non-encrypted data)
+DLROM #(15,8) romd(CLK40M, CPUAD, cpu_rd_mromd, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPUD);	// ($0000-$7FFF non-encrypted data)
 
 // CPU Region $8000-$BFFF non-encrypted
 // ROM banks 0-3
 wire [1:0] cpu_bank = {VIDMD[6],VIDMD[2]};
-DLROM #(16,8) rom8(CLK48M, {cpu_bank,CPUAD[13:0]}, cpu_rd_mrom1, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU8);
+DLROM #(16,8) rom8(CLK40M, {cpu_bank,CPUAD[13:0]}, cpu_rd_mrom1, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU8);
 
 reg nocrypt = 0;
-always @(posedge CLK48M) if(ROMEN & `EN_MCPUD) nocrypt <= 1;
+always @(posedge CLK40M) if(ROMEN & `EN_MCPUD) nocrypt <= 1;
 
 // Work RAM
 wire [7:0]	cpu_rd_mram;
 wire			cpu_cs_mram = (CPUAD[15:12] == 4'b1100) & cpu_mreq;
-//SRAM_4096 mainram(CLK48M, CPUAD[11:0], cpu_rd_mram, cpu_cs_mram & CPUWR, CPUDO );
+//SRAM_4096 mainram(CLK40M, CPUAD[11:0], cpu_rd_mram, cpu_cs_mram & CPUWR, CPUDO );
 /*
 	input					clk,
 	input	    [11:0]	adrs,
@@ -118,13 +118,13 @@ wire			cpu_cs_mram = (CPUAD[15:12] == 4'b1100) & cpu_mreq;
 
 dpram #(.aWidth(12),.dWidth(8))
 mainram(
-	.clk_a(CLK48M),
+	.clk_a(CLK40M),
 	.addr_a(CPUAD[11:0]),
 	.we_a(cpu_cs_mram & CPUWR),
 	.d_a(CPUDO),
 	.q_a(cpu_rd_mram),
 
-	.clk_b(CLK48M),
+	.clk_b(CLK40M),
 	.addr_b(HSAD[11:0]),
 	.we_b(HSWE),
 	.d_b(HSDI),
@@ -139,15 +139,21 @@ wire cpu_cs_vidm = ((CPUAD[7:0] == 8'h15)|(CPUAD[7:0] == 8'h19)) & cpu_iorq;
 wire cpu_wr_sreq = cpu_cs_sreq & _cpu_wr;
 wire cpu_wr_vidm = cpu_cs_vidm & _cpu_wr;
 
-always @(posedge CLK48M or posedge RESET) begin
+always @(posedge CLK40M or posedge RESET) begin
 	if (RESET) begin
 		VIDMD <= 0;
 		SNDRQ <= 0;
 		SNDNO <= 0;
 	end
 	else begin
-		if (cpu_wr_vidm) VIDMD <= CPUDO;
-		if (cpu_wr_sreq) begin SNDNO <= CPUDO; SNDRQ <= 1'b1; end else SNDRQ <= 1'b0;
+		if (cpu_wr_vidm)
+			VIDMD <= CPUDO;
+		if (cpu_wr_sreq) begin
+			SNDNO <= CPUDO;
+			SNDRQ <= 1'b1;
+		end else
+			SNDRQ <= 1'b0;
+
 	end
 end
 

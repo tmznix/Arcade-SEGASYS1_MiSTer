@@ -5,7 +5,7 @@
 *********************************************************************/
 module SEGASYSTEM1
 (
-	input				clk48M,
+	input				clk40M,
 	input				reset,
 
 	input   [7:0]	INP0,
@@ -14,7 +14,7 @@ module SEGASYSTEM1
 
 	input   [7:0]	DSW0,
 	input   [7:0]	DSW1,
-	
+
 	input   [8:0]  PH,         // PIXEL H
 	input   [8:0]  PV,         // PIXEL V
 	output        PCLK_EN,
@@ -56,7 +56,7 @@ SEGASYS1_MAIN Main (
 	.RESET(reset),
 	.INP0(INP0),.INP1(INP1),.INP2(INP2),
 	.DSW0(DSW0),.DSW1(DSW1),
-	.CLK48M(clk48M),
+	.CLK40M(clk40M),
 	.CPUAD(CPUAD),.CPUDO(CPUDO),.CPUWR(CPUWR),
 	.VBLK(VBLK),.VIDCS(VIDCS),.VIDDO(VIDDO),
 	.SNDRQ(SNDRQ),.SNDNO(SNDNO),
@@ -72,7 +72,7 @@ SEGASYS1_MAIN Main (
 // Video
 wire [11:0] OPIX;
 SEGASYS1_VIDEO Video (
-	.RESET(reset),.VCLKx8(clk48M),
+	.RESET(reset),.VCLKx8(clk40M),
 	.PH(PH),.PV(PV),.VFLP(VIDMD[7]),
 	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB(OPIX),.PALDSW(1'b0),
 
@@ -80,7 +80,7 @@ SEGASYS1_VIDEO Video (
 	.cpu_rd(VIDCS),.cpu_dr(VIDDO),
 
 	.ROMCL(ROMCL),.ROMAD(ROMAD),.ROMDT(ROMDT),.ROMEN(ROMEN),
-	
+
 	.PAUSE_N(PAUSE_N),
 	.HSAD(HSAD),.HSDO(HSDO_VIDEO),.HSDI(HSDI),.HSWE(HSWE_VIDEO & HSWE)
 );
@@ -88,7 +88,7 @@ assign POUT = VIDMD[4] ? 12'd0 : OPIX;
 
 // Sound
 SEGASYS1_SOUND Sound(
-	clk48M, reset, SNDNO, SNDRQ, SOUT,
+	clk40M, reset, SNDNO, SNDRQ, SOUT,
 	ROMCL, ROMAD, ROMDT, ROMEN
 );
 

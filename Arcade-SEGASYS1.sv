@@ -188,14 +188,14 @@ localparam CONF_STR = {
 	"A.SEGASYS1;;",
 	"-;",
 	"H0OEF,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"H0O6,Orientation,Vert,Horz;", 
+	"H0O6,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"O7,Pause when OSD is open,On,Off;",
 	"-;",
 	"DIP;",
 	"-;",
-	"OOS,Analog Video H-Pos,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31;",
-	"OTV,Analog Video V-Pos,0,1,2,3,4,5,6,7;",
+	"OOR,Analog Video H-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
+	"OSV,Analog Video V-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"-;",
 	"R0,Reset;",
 	"J1,Trig1,Trig2,Trig3,Trig4,Trig5,Start 1P,Start 2P,Coin,Pause;",
@@ -203,21 +203,24 @@ localparam CONF_STR = {
 	"V,v",`BUILD_DATE
 };
 
-wire [4:0] HOFFS = status[28:24];
-wire [2:0] VOFFS = status[31:29];
+wire [3:0] HOFFS = status[27:24];
+wire [3:0] VOFFS = status[31:28];
 
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_48M;
-wire clk_hdmi = clk_48M;
-wire clk_sys  = clk_48M;
+// MAME sources mention 20MHz, 8MHz crystals and 5Mhz pixel clock.
+// 40MHz sys clock should get them all covered.
+
+wire clk_40M;
+wire clk_hdmi = clk_40M;
+wire clk_sys  = clk_40M;
 
 pll pll
 (
 	.rst(0),
 	.refclk(CLK_50M),
-	.outclk_0(clk_48M)
+	.outclk_0(clk_40M)
 );
 
 ///////////////////////////////////////////////////
@@ -449,7 +452,7 @@ end
 
 SEGASYSTEM1 GameCore
 (
-	.clk48M(clk_sys),
+	.clk40M(clk_sys),
 	.reset(iRST),
 
 	.INP0(INP0),
