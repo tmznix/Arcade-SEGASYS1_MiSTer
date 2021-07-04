@@ -21,23 +21,25 @@ module SEGASYS1_VIDEO
 	input		[8:0]	PH,
 	input		[8:0]	PV,
 	input				VFLP,
-	
+
 	output			VBLK,
 	output			PCLK_EN,
 	output   [11:0]	RGB,
 
+	input           system2,
+	input           system2_rowscroll,
 	input				PALDSW,
 	input	  [15:0]	cpu_ad,
 	input				cpu_wr,
 	input		[7:0]	cpu_dw,
 	output			cpu_rd,
 	output	[7:0]	cpu_dr,
-	
+
 	input				ROMCL,		// Downloaded ROM image
 	input	 [24:0]	ROMAD,
 	input	 [7:0]	ROMDT,
 	input				ROMEN,
-	
+
 	input 			PAUSE_N,
 	input  [15:0]	HSAD,
 	output [7:0]	HSDO,
@@ -76,8 +78,8 @@ wire  [7:0] scry;
 
 VIDCPUINTF intf(
 	RESET,
-
 	VCLKx8,
+	PH, PV,
 	cpu_ad, cpu_wr, cpu_dw,
 	cpu_rd, cpu_dr,
 	palno, palout,
@@ -87,6 +89,7 @@ VIDCPUINTF intf(
 	mixcoll_ad, mixcoll,
 	sprcoll_ad, sprcoll,
 	scrx, scry,
+	system2, system2_rowscroll,
 	PAUSE_N,HSAD,HSDO,HSDI,HSWE
 );
 
@@ -96,6 +99,7 @@ wire [8:0] HPOS,  VPOS;
 wire [8:0] BG0HP, BG0VP;
 wire [8:0] BG1HP, BG1VP;
 VIDHVGEN hv(
+	system2,
 	PH,    PV,
 	scrx,  scry,
 	HPOS,  VPOS,
@@ -103,7 +107,7 @@ VIDHVGEN hv(
 	BG1HP, BG1VP,
 	VBLK
 );
-	
+
 
 // Sprite Engine
 wire [10:0] SPRPX;
@@ -114,6 +118,7 @@ SEGASYS1_SPRITE sprite(
 	.VCLKx8(VCLKx8),
 	.VCLKx4(VCLKx4),
 	.VCLKx4_EN(VCLKx4_EN), .VCLK_EN(VCLK_EN),
+	.system2(system2),
 	.PH(HPOS),.PV(VPOS),
 	.sprad(sprad),.sprdt(sprdt),
 	.sprchad(sprchad),.sprchdt(sprchdt),
@@ -125,19 +130,23 @@ SEGASYS1_SPRITE sprite(
 // BG Scanline Generator
 wire [10:0] BG0PX, BG1PX;
 wire [14:0] tile0ad, tile1ad;
+wire [14:0] tilead_fg = system2 ? tile0ad : tile1ad;
+wire [14:0] tilead_bg = system2 ? tile1ad : tile0ad;
 reg  [14:0] tilead;
 wire [23:0] tiledt;
-reg  [23:0] tile0dt, tile1dt, tile0dt_r;
+reg  [23:0] tiledt_fg, tiledt_bg, tiledt_r;
+wire [23:0] tile0dt = system2 ? tiledt_fg : tiledt_bg;
+wire [23:0] tile1dt = system2 ? tiledt_bg : tiledt_fg;
 always @(posedge VCLKx8) begin
 	if (VCLK_EN) begin
 		if (HPOS[2:0] == 3'b000) begin
-			tilead <= tile0ad;
-			tile1dt <= tiledt;
-			tile0dt <= tile0dt_r;
+			tilead <= tilead_bg;
+			tiledt_fg <= tiledt;
+			tiledt_bg <= tiledt_r;
 		end
 		if (HPOS[2:0] == 3'b100) begin
-			tilead <= tile1ad;
-			tile0dt_r <= tiledt;
+			tilead <= tilead_fg;
+			tiledt_r <= tiledt;
 		end
 	end
 end
@@ -154,7 +163,9 @@ wire [7:0] color;
 DLROM #(8,8) clut(VCLKx8, cltidx, cltval, ROMCL,ROMAD,ROMDT,ROMEN & `EN_CLUT );
 COLMIX cmix(
 	VCLKx8, VCLK_EN,
-	BG0PX, BG1PX, SPRPX,
+	system2 ? BG1PX : BG0PX,
+	system2 ? BG0PX : BG1PX,
+	SPRPX,
 	PALDSW, HPOS, VPOS,
 	cltidx, cltval,
 	mixcoll, mixcoll_ad,
@@ -196,6 +207,10 @@ module VIDCPUINTF
 	input				RESET,
 
 	input         clk,
+
+	input		[8:0]	PH,
+	input		[8:0]	PV,
+
 	input	  [15:0]	cpu_ad,
 	input				cpu_wr,
 	input		[7:0]	cpu_dw,
@@ -219,10 +234,13 @@ module VIDCPUINTF
 
 	input    [9:0]	sprcoll_ad,
 	input				sprcoll,
-	
+
 	output reg [15:0] scrx,
 	output reg  [7:0] scry,
-	
+
+	input           system2,
+	input           system2_rowscroll,
+
 	input 			PAUSE_N,
 	input  [15:0]	HSAD,
 	output [7:0]	HSDO,
@@ -246,7 +264,8 @@ wire cpu_wr_sprcoll;
 wire cpu_wr_sprcollclr;
 wire cpu_wr_vram0;
 wire cpu_wr_vram1;
-wire cpu_wr_scrreg;
+wire cpu_wr_scrreg1;
+wire cpu_wr_scrreg0;
 
 VIDADEC adecs(
 	cpu_ad,
@@ -258,7 +277,7 @@ VIDADEC adecs(
 	cpu_cs_sprcoll,
 	cpu_cs_vram0,
 	cpu_cs_vram1,
-	
+
 	cpu_wr_palram,
 	cpu_wr_spram,
 	cpu_wr_mixcoll,
@@ -267,25 +286,40 @@ VIDADEC adecs(
 	cpu_wr_sprcollclr,
 	cpu_wr_vram0,
 	cpu_wr_vram1,
-	cpu_wr_scrreg,
+	cpu_wr_scrreg0,
+	cpu_wr_scrreg1,
 
 	cpu_rd
 );
 
+reg [7:0] scrx_row[0:63];
+
 // Scroll Register
-always @ ( posedge clk or posedge RESET) begin
+always @ (posedge clk or posedge RESET) begin
 	if (RESET) begin
 		scrx <= 0;
 		scry <= 0;
 	end
 	else begin
-		if (cpu_wr_scrreg) begin
-			case(cpu_ad[7:0])
-			8'hBD: scry <= cpu_dw;
-			8'hFC: scrx[ 7:0] <= cpu_dw;
-			8'hFD: scrx[15:8] <= cpu_dw;
-			default:;
-			endcase
+		if (system2) begin
+			if (cpu_wr_scrreg0)
+				if (cpu_ad[6])
+					scrx_row[cpu_ad[5:0]] <= cpu_dw;
+				else if (cpu_ad[7:0] == 8'hba)
+					scry <= cpu_dw;
+			if (system2_rowscroll)
+				scrx = {scrx_row[{PV[7:3],1'b1}],scrx_row[{PV[7:3],1'b0}]};
+			else
+				scrx = {scrx_row[1],scrx_row[0]};
+		end else begin
+			if (cpu_wr_scrreg1) begin
+				case(cpu_ad[7:0])
+				8'hBD: scry <= cpu_dw;
+				8'hFC: scrx[ 7:0] <= cpu_dw;
+				8'hFD: scrx[15:8] <= cpu_dw;
+				default:;
+				endcase
+			end
 		end
 	end
 end
@@ -387,7 +421,7 @@ module TileChrROM
 	input				clk,
 	input  [14:0]	adr,
 	output [23:0]	dat,
-	
+
 	input				ROMCL,		// Downloaded ROM image
 	input  [24:0]	ROMAD,
 	input	  [7:0]	ROMDT,
@@ -413,6 +447,7 @@ endmodule
 //----------------------------------
 module VIDHVGEN
 (
+	input    	system2,
 	input	 [8:0]	PH,
 	input	 [8:0]	PV,
 
@@ -430,7 +465,7 @@ module VIDHVGEN
 
 	output			VBLK
 );
-	
+
 assign VBLK = (PV == 9'd224) & (PH <= 9'd64);
 
 assign HPOS = PH+1'd1;
@@ -439,11 +474,11 @@ assign VPOS = PV;
 wire [7:0] BGHSCR = scrx[8:1]+4'd14;
 wire [7:0] BGVSCR = scry;
 
-assign BG0HP = (HPOS-BGHSCR)+8'd3;
-assign BG0VP = (VPOS+BGVSCR);
+assign BG0HP = system2 ? HPOS+8'd3 : (HPOS-BGHSCR)+3;
+assign BG0VP = system2 ? VPOS : (VPOS+BGVSCR);
 
-assign BG1HP = HPOS+8'd3;
-assign BG1VP = VPOS;
+assign BG1HP = system2 ? (HPOS-BGHSCR)+12 : HPOS+3;
+assign BG1VP = system2 ? (VPOS+BGVSCR) : VPOS;
 
 endmodule
 
@@ -462,7 +497,7 @@ module VIDADEC
 	output		 cpu_cs_sprcoll,
 	output		 cpu_cs_vram0,
 	output		 cpu_cs_vram1,
-	
+
 	output		 cpu_wr_palram,
 	output		 cpu_wr_spram,
 	output		 cpu_wr_mixcoll,
@@ -471,31 +506,34 @@ module VIDADEC
 	output		 cpu_wr_sprcollclr,
 	output		 cpu_wr_vram0,
 	output		 cpu_wr_vram1,
-	output		 cpu_wr_scrreg,
+	output		 cpu_wr_scrreg0,
+	output		 cpu_wr_scrreg1,
 
 	output		 cpu_rd
 );
 
-assign cpu_cs_palram		 = (cpu_ad[15:11] == 5'b1101_1   );
-assign cpu_cs_spram		 = (cpu_ad[15:11] == 5'b1101_0   );
-assign cpu_cs_mixcoll    = (cpu_ad[15:10] == 6'b1111_00  );
-wire	 cpu_cs_mixcollclr = (cpu_ad[15:10] == 6'b1111_01  );
-assign cpu_cs_sprcoll    = (cpu_ad[15:10] == 6'b1111_10  );
-wire   cpu_cs_sprcollclr = (cpu_ad[15:10] == 6'b1111_11  );
-assign cpu_cs_vram0		 = (cpu_ad[15:11] == 5'b1110_0   );
-assign cpu_cs_vram1		 = (cpu_ad[15:11] == 5'b1110_1   );
-wire   cpu_cs_scrreg     = (cpu_ad[15: 8] == 8'b1110_1111);
+assign cpu_cs_palram     = (cpu_ad[15:11] == 5'b1101_1);
+assign cpu_cs_spram      = (cpu_ad[15:11] == 5'b1101_0);
+assign cpu_cs_mixcoll    = (cpu_ad[15:10] == 6'b1111_00);
+wire   cpu_cs_mixcollclr = (cpu_ad[15:10] == 6'b1111_01);
+assign cpu_cs_sprcoll    = (cpu_ad[15:10] == 6'b1111_10);
+wire   cpu_cs_sprcollclr = (cpu_ad[15:10] == 6'b1111_11);
+assign cpu_cs_vram0      = (cpu_ad[15:11] == 5'b1110_0);
+assign cpu_cs_vram1      = (cpu_ad[15:11] == 5'b1110_1);
+wire   cpu_cs_scrreg0    = (cpu_ad[15: 7] == 9'b1110_0111_1);
+wire   cpu_cs_scrreg1    = (cpu_ad[15: 8] == 8'b1110_1111);
 
 
-assign cpu_wr_palram 	 = cpu_cs_palram 		& cpu_wr;
-assign cpu_wr_spram  	 = cpu_cs_spram  		& cpu_wr;
+assign cpu_wr_palram     = cpu_cs_palram     & cpu_wr;
+assign cpu_wr_spram      = cpu_cs_spram      & cpu_wr;
 assign cpu_wr_mixcoll    = cpu_cs_mixcoll    & cpu_wr;
 assign cpu_wr_mixcollclr = cpu_cs_mixcollclr & cpu_wr;
 assign cpu_wr_sprcoll    = cpu_cs_sprcoll    & cpu_wr;
 assign cpu_wr_sprcollclr = cpu_cs_sprcollclr & cpu_wr;
-assign cpu_wr_vram0		 = cpu_cs_vram0 		& cpu_wr;
-assign cpu_wr_vram1		 = cpu_cs_vram1 		& cpu_wr;
-assign cpu_wr_scrreg     = cpu_cs_scrreg		& cpu_wr;
+assign cpu_wr_vram0      = cpu_cs_vram0      & cpu_wr;
+assign cpu_wr_vram1      = cpu_cs_vram1      & cpu_wr;
+assign cpu_wr_scrreg0    = cpu_cs_scrreg0    & cpu_wr;
+assign cpu_wr_scrreg1    = cpu_cs_scrreg1    & cpu_wr;
 
 
 assign cpu_rd = cpu_cs_palram  |
@@ -582,7 +620,7 @@ module COLMIX
 
 	output [10:0]	palno,
 	input   [7:0]  palout,
-	
+
 	output reg [7:0] color
 );
 
@@ -591,7 +629,7 @@ assign cltidx = { 1'b0,
 	 BG1PX[10:9],(BG1PX[2:0]==0),
 	(SPRPX[3:0]==0)
 };
-	
+
 assign mixcoll    = ~(cltval[2]);
 assign mixcoll_ad = { cltval[3], SPRPX[8:4] };
 

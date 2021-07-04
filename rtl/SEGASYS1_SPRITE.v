@@ -7,6 +7,8 @@ module SEGASYS1_SPRITE
 	input          VCLKx4_EN,
 	input          VCLK_EN,
 
+	input   	system2,
+
 	input  	[8:0]		PH,
 	input  	[8:0]		PV,
 
@@ -144,7 +146,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 			// get yofs/xpos/bank
 			2: begin
 				yofs <= hitsprvps[hitr];
-				xpos <= sprdt[8:1]+4'd14;
+				xpos <= sprdt[8:1]+(system2 ? 22 : 14);
 				bank <= { sprdt[13], sprdt[14], sprdt[15] };
 				spr_ofs <= 2;
 				phaseHD <= 3;

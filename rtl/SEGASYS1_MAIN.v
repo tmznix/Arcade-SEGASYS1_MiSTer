@@ -16,6 +16,7 @@ module SEGASYS1_MAIN
 
 	input   [7:0]	DSW0,
 	input   [7:0]	DSW1,
+	input           system2,
 
 	input				VBLK,
 	input				VIDCS,
@@ -98,7 +99,7 @@ DLROM #(15,8) romd(CLK40M, CPUAD, cpu_rd_mromd, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MC
 
 // CPU Region $8000-$BFFF non-encrypted
 // ROM banks 0-3
-wire [1:0] cpu_bank = {VIDMD[6],VIDMD[2]};
+wire [1:0] cpu_bank = {system2 ? VIDMD[3] : VIDMD[6],VIDMD[2]};
 DLROM #(16,8) rom8(CLK40M, {cpu_bank,CPUAD[13:0]}, cpu_rd_mrom1, ROMCL,ROMAD,ROMDT,ROMEN & `EN_MCPU8);
 
 reg nocrypt = 0;

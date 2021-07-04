@@ -277,11 +277,12 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.spinner_1(spinner_1)
 );
 
-reg [7:0] SYSMODE;	// [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6] HS start delay for TeddyBoy Blues (27 seconds!)
+// SYSMODE: [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6]=SYS2 rowscroll,[7] button1&2 swap
+reg [7:0] SYSMODE;
 reg [7:0] DSW[8];
 always @(posedge clk_sys) begin
 	if (ioctl_wr) begin
-		if ((ioctl_index==1  ) && (ioctl_addr==0))   SYSMODE <= ioctl_dout;
+		if ((ioctl_index==1  ) && !ioctl_addr) SYSMODE <= ioctl_dout;
 		if ((ioctl_index==254) && !ioctl_addr[24:3]) DSW[ioctl_addr[2:0]] <= ioctl_dout;
 	end
 end
@@ -460,6 +461,9 @@ SEGASYSTEM1 GameCore
 	.INP2(INP2),
 	.DSW0(DSW[0]),
 	.DSW1(DSW[1]),
+
+	.system2(SYSMODE[0]),
+	.system2_rowscroll(SYSMODE[6]),
 
 	.PH(HPOS),
 	.PV(VPOS),

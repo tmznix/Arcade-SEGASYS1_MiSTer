@@ -14,6 +14,8 @@ module SEGASYSTEM1
 
 	input   [7:0]	DSW0,
 	input   [7:0]	DSW1,
+	input		system2,
+	input		system2_rowscroll,
 
 	input   [8:0]  PH,         // PIXEL H
 	input   [8:0]  PV,         // PIXEL V
@@ -56,6 +58,7 @@ SEGASYS1_MAIN Main (
 	.RESET(reset),
 	.INP0(INP0),.INP1(INP1),.INP2(INP2),
 	.DSW0(DSW0),.DSW1(DSW1),
+	.system2(system2),
 	.CLK40M(clk40M),
 	.CPUAD(CPUAD),.CPUDO(CPUDO),.CPUWR(CPUWR),
 	.VBLK(VBLK),.VIDCS(VIDCS),.VIDDO(VIDDO),
@@ -74,7 +77,8 @@ wire [11:0] OPIX;
 SEGASYS1_VIDEO Video (
 	.RESET(reset),.VCLKx8(clk40M),
 	.PH(PH),.PV(PV),.VFLP(VIDMD[7]),
-	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB(OPIX),.PALDSW(1'b0),
+	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB(OPIX),
+	.system2(system2),.system2_rowscroll(system2_rowscroll),.PALDSW(1'b0),
 
 	.cpu_ad(CPUAD),.cpu_wr(CPUWR),.cpu_dw(CPUDO),
 	.cpu_rd(VIDCS),.cpu_dr(VIDDO),
