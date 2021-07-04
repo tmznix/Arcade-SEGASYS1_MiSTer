@@ -49,8 +49,8 @@ always @(posedge CLK) begin
 			vcnt <= (vcnt+1) % height;
 		end
 
-		hblk256 <= (hcnt < 30) | (hcnt >= 286);
-		hblk240 <= (hcnt < 38) | (hcnt >= 278);
+		hblk256 <= (hcnt < 29) | (hcnt >= 285);
+		hblk240 <= (hcnt < 37) | (hcnt >= 277);
 		VBLK <= (vcnt >= 224);
 		HSYN <= (hcnt < HS_B) | (hcnt >= HS_E);
 		VSYN <= (vcnt < VS_B) | (vcnt >= VS_E);
