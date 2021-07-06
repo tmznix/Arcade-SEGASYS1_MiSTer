@@ -26,7 +26,7 @@
 	<rom index="1">
 		<part>04</part>
 	</rom>
-	<rom index="0" zip="spatter.zip" type="merged" md5="None">
+	<rom index="0" zip="spatter.zip" type="merged" md5="353ab96e8d51500b87b1704d0c89ef53">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="1df95511" name="epr-6316.120"/>
 		<part crc="1df95511" name="epr-6316.120"/>

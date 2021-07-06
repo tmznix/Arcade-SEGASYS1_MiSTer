@@ -24,10 +24,7 @@
 		<dip name="Allow Continue" bits="13" ids="Yes,No"/>
 		<dip name="Service Mode" bits="15" ids="On,Off"/>
 	</switches>
-	<rom index="1">
-		<part>32</part>
-	</rom>
-	<rom index="0" zip="blockgal.zip" type="merged" md5="None">
+	<rom index="0" zip="blockgal.zip" type="merged" md5="8a4a7bb351f23d52c0fc0bed867079c4">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="d848faff" name="bg.120"/>
 		<part crc="d848faff" name="bg.120"/>
@@ -2126,6 +2123,9 @@
 		c7 a6 82 4a d0 30 16 fa c7 a6 82 4a d0 30 16 fa ae 7b d1 29 8e 0d 73 00 ae 7b d1 29 8e 0d 73 00
 		c7 a6 82 4a d0 30 16 fa c7 a6 82 4a d0 30 16 fa ae 7b d1 29 8e 0d 73 00 ae 7b d1 29 8e 0d 73 00
 		</patch>
+	</rom>
+	<rom index="1">
+		<part>32</part>
 	</rom>
 	<rom index="3" md5="none">
 		<part>

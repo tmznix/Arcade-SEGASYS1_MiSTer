@@ -9,23 +9,7 @@
 	<joystick>8-way</joystick>
 	<rotation>vertical/ccw</rotation>
 	<region>World</region>
-	<buttons names="Jump,-,-,-,-,Start 1P,Start 2P,Coin,Pause" default="A,B,X,R,L,Start,Select" count="1"/>
-	<switches base="16" default="FF,FE">
-		<!-- SWA -->
-		<dip name="Coin A" bits="0,3" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
-		<dip name="Coin B" bits="4,7" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
-		<!-- SWB -->
-		<!--
-		<dip name="Cabinet" bits="8" ids="Upright,Cocktail"/>
-		-->
-		<dip name="Lives" bits="9,10" ids="Infinite,5,4,3"/>
-		<dip name="Bonus Life" bits="11,13" ids="None,70k,60k,50k,40k,30k,20k,10k"/>
-		<dip name="Difficulty" bits="14,15" ids="Hardest,Hard,Medium,Easy"/>
-	</switches>
-	<rom index="1">
-		<part>86</part>
-	</rom>
-	<rom index="0" zip="upndown.zip" type="merged" md5="None">
+	<rom index="0" zip="upndown.zip" type="merged" md5="1e5babafae0430f2fbb55b37c6f8297c">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="cf4e4c45" name="epr-5535.3"/>
 		<part crc="cf4e4c45" name="epr-5535.3"/>
@@ -88,11 +72,27 @@
 			88 80 08 00 88 80 08 00 08 88 00 80 28 08 a8 88
 		</part>
 	</rom>
+	<rom index="1">
+		<part>06</part>
+	</rom>
 	<rom index="3" md5="none">
 		<part>
-			00 0F FF FF 00 FF 00 02 00 02 00 01 00 FF 00 00
-			00 00 C9 3F 00 3F 01 00
+		00 0F FF FF 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 C9 3F 00 3F 01 00
 		</part>
 	</rom>
 	<nvram index="4" size="63"/>
+	<switches base="16" default="FF,FE">
+		<!-- SWA -->
+		<dip name="Coin A" bits="0,3" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
+		<dip name="Coin B" bits="4,7" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
+		<!-- SWB -->
+		<!--
+		<dip name="Cabinet" bits="8" ids="Upright,Cocktail"/>
+		-->
+		<dip name="Lives" bits="9,10" ids="Infinite,5,4,3"/>
+		<dip name="Bonus Life" bits="11,13" ids="None,70k,60k,50k,40k,30k,20k,10k"/>
+		<dip name="Difficulty" bits="14,15" ids="Hardest,Hard,Medium,Easy"/>
+	</switches>
+	<buttons names="Jump,-,-,-,-,Start 1P,Start 2P,Coin,Pause" default="A,B,X,R,L,Start,Select" count="1"/>
 </misterromdescription>

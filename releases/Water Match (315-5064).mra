@@ -9,9 +9,7 @@
 	<joystick>4-way</joystick>
 	<rotation>vertical/ccw</rotation>
 	<region>World</region>
-	<rom index="1">
-		<part>0E</part>
-	</rom>
+	<buttons names="Right,Left,Down,Up,Dive,Start 1P,Start 2P,Coin,Pause" default="A,B,X,Y,R,L,Start,Select" count="5"/>
 	<switches base="16" default="FF,FC">
 		<!-- SWA -->
 		<dip name="Coin A" bits="0,3" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
@@ -24,8 +22,10 @@
 		<dip name="Time" bits="10,11" ids="Fastest,Faster,Fast,Normal"/>
 		<dip name="Difficulty" bits="14" ids="Hard,Easy"/>
 	</switches>
-	<buttons names="Right,Left,Down,Up,Dive,Start 1P,Start 2P,Coin,Pause" default="A,B,X,Y,R,L,Start,Select" count="5"/>
-	<rom index="0" zip="wmatch.zip" type="merged" md5="None">
+	<rom index="1">
+		<part>0E</part>
+	</rom>
+	<rom index="0" zip="wmatch.zip" type="merged" md5="d4f482d8f313d9ac6fc297274e3dd7ca">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="50d2afb7" name="wm.3"/>
 		<part crc="50d2afb7" name="wm.3"/>

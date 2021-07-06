@@ -27,7 +27,7 @@
 	<rom index="1">
 		<part>84</part>
 	</rom>
-	<rom index="0" zip="wboy.zip" type="merged" md5="None">
+	<rom index="0" zip="wboy.zip" type="merged" md5="c428045ab4c7ded9672f8a702cdf3d28">
 		<!-- soundcpu, size: 0x8000 -->
 		<part name="epr-7498.120" crc="78ae1e7b"/>
 		<part name="epr-7498.120" crc="78ae1e7b"/>
@@ -91,7 +91,7 @@
 			0b 0b 0c 0c 0c 0c 0c 0d 0d 0d 0d 0d 0e 0e 0e 0e
 			0e 0f 0f 0f 0f 0f 10 10 10 10 11 11 11 11 11 12
 			12 12 12 12 13 13 13 13 13 14 14 14 14 14 15 15
-		</part>
+	</part>
 	</rom>
 	<rom index="3" md5="none">
 		<part>

@@ -24,7 +24,7 @@
 	<rom index="1">
 		<part>02</part>
 	</rom>
-	<rom index="0" zip="swat.zip" type="merged" md5="None">
+	<rom index="0" zip="swat.zip" type="merged" md5="eb9fbbd0e04559ea0d6f095a9f050c8e">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="f6afd0fd" name="epr-5819.3"/>
 		<part repeat="0x6000">00</part>

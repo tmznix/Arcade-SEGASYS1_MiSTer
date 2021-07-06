@@ -25,7 +25,7 @@
 	<rom index="1">
 		<part>02</part>
 	</rom>
-	<rom index="0" zip="raflesia.zip" type="merged" md5="None">
+	<rom index="0" zip="raflesia.zip" type="merged" md5="6ea873b9a8f4f0199d18c2873e2b6962">
 		<!-- soundcpu, size: 0x10000 -->
 		<part crc="14387666" name="epr-7420.120"/>
 		<part crc="14387666" name="epr-7420.120"/>
@@ -68,7 +68,7 @@
 		<part crc="648350b8" name="pr-5317.76"/>
 
 		<!-- color proms, size: 0x300 -->
-		<part repeat="0x300">00</part>
+	<part repeat="0x300">00</part>
 
 		<!-- encryption_device: 315-5162 -->
 		<part>

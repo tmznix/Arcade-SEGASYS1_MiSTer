@@ -26,63 +26,60 @@
 	<special_controls></special_controls>
 	<num_buttons>2</num_buttons>
 	<buttons default="A,B,Start,Select,R,C"
-	         names="Punch,Jump,-,-,-,Start 1P,Start 2P,Coin,Pause"/>
+		 names="Punch,Jump,-,-,-,Start 1P,Start 2P,Coin,Pause"/>
 	<switches default="FF,7E">
-		<!-- SWA -->
-		<dip name="Coin A" bits="0,3" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
-		<dip name="Coin B" bits="4,7" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
-		<!-- SWB -->
 		<dip bits="9" ids="On,Off" name="Demo Sound"></dip>
 		<dip bits="10,11" ids="Infinite,5,4,3" name="Lives"></dip>
 		<dip bits="12,13" ids="None,70000,50000,30000" name="Extend"></dip>
-	</switches>
+		</switches>
+
 	<rom index="1">
 		<part>04</part>
 	</rom>
-	<rom index="0" md5="none" zip="imsorry.zip">
-	        <!-- soundcpu, size: 0x8000 -->
-	        <part crc="25e3d685" name="epr-6656.120"/>
-	        <part crc="25e3d685" name="epr-6656.120"/>
-	        <part crc="25e3d685" name="epr-6656.120"/>
-	        <part crc="25e3d685" name="epr-6656.120"/>
+	<rom index="0" md5="f59115c31a89489f2c46ec4b099bf10f" zip="imsorry.zip">
+		<!-- soundcpu, size: 0x8000 -->
+		<part crc="25e3d685" name="epr-6656.120"/>
+		<part crc="25e3d685" name="epr-6656.120"/>
+		<part crc="25e3d685" name="epr-6656.120"/>
+		<part crc="25e3d685" name="epr-6656.120"/>
 
-	        <!-- maincpu, size: 0x18000 -->
-	        <part crc="eb087d7f" name="epr-6676.116"/>
-	        <part crc="bd244bee" name="epr-6677.109"/>
-	        <part crc="2e16b9fd" name="epr-6678.96"/>
-	        <part crc="2e16b9fd" name="epr-6678.96"/>
-	        <part crc="2e16b9fd" name="epr-6678.96"/>
-	        <part crc="2e16b9fd" name="epr-6678.96"/>
+		<!-- maincpu, size: 0x18000 -->
+		<part crc="eb087d7f" name="epr-6676.116"/>
+		<part crc="bd244bee" name="epr-6677.109"/>
+		<part crc="2e16b9fd" name="epr-6678.96"/>
+		<part crc="2e16b9fd" name="epr-6678.96"/>
+		<part crc="2e16b9fd" name="epr-6678.96"/>
+		<part crc="2e16b9fd" name="epr-6678.96"/>
 
-	        <!-- sprites, size: 0x20000 -->
-	        <part crc="1ba167ee" name="epr-6645.117"/>
-	        <part crc="edda7ad6" name="epr-6646.04"/>
-	        <part crc="1ba167ee" name="epr-6645.117"/>
-	        <part crc="edda7ad6" name="epr-6646.04"/>
-	        <part crc="1ba167ee" name="epr-6645.117"/>
-	        <part crc="edda7ad6" name="epr-6646.04"/>
-	        <part crc="1ba167ee" name="epr-6645.117"/>
-	        <part crc="edda7ad6" name="epr-6646.04"/>
+		<!-- sprites, size: 0x20000 -->
+		<part crc="1ba167ee" name="epr-6645.117"/>
+		<part crc="edda7ad6" name="epr-6646.04"/>
+		<part crc="1ba167ee" name="epr-6645.117"/>
+		<part crc="edda7ad6" name="epr-6646.04"/>
+		<part crc="1ba167ee" name="epr-6645.117"/>
+		<part crc="edda7ad6" name="epr-6646.04"/>
+		<part crc="1ba167ee" name="epr-6645.117"/>
+		<part crc="edda7ad6" name="epr-6646.04"/>
 
-	        <!-- tiles, size: 0x18000 -->
-	        <part crc="2c8df377" name="epr-6684.62"/>
-	        <part crc="89431c48" name="epr-6683.61"/>
-	        <part crc="2c8df377" name="epr-6684.62"/>
-	        <part crc="89431c48" name="epr-6683.61"/>
-	        <part crc="256a9246" name="epr-6682.64"/>
-	        <part crc="6974d189" name="epr-6681.63"/>
-	        <part crc="256a9246" name="epr-6682.64"/>
-	        <part crc="6974d189" name="epr-6681.63"/>
-	        <part crc="10a629d6" name="epr-6680.66"/>
-	        <part crc="143d883c" name="epr-6674.65"/>
-	        <part crc="10a629d6" name="epr-6680.66"/>
-	        <part crc="143d883c" name="epr-6674.65"/>
+		<!-- tiles, size: 0x18000 -->
+		<part crc="2c8df377" name="epr-6684.62"/>
+		<part crc="89431c48" name="epr-6683.61"/>
+		<part crc="2c8df377" name="epr-6684.62"/>
+		<part crc="89431c48" name="epr-6683.61"/>
+		<part crc="256a9246" name="epr-6682.64"/>
+		<part crc="6974d189" name="epr-6681.63"/>
+		<part crc="256a9246" name="epr-6682.64"/>
+		<part crc="6974d189" name="epr-6681.63"/>
+		<part crc="10a629d6" name="epr-6680.66"/>
+		<part crc="143d883c" name="epr-6674.65"/>
+		<part crc="10a629d6" name="epr-6680.66"/>
+		<part crc="143d883c" name="epr-6674.65"/>
 
-	        <!-- lookup_proms, size: 0x100 -->
-	        <part crc="648350b8" name="pr-5317.76"/>
+		<!-- lookup_proms, size: 0x100 -->
+		<part crc="648350b8" name="pr-5317.76"/>
 
-	        <!-- color_proms, size: 0x300 -->
-	        <part repeat="0x300">00</part>
+		<!-- color_proms, size: 0x300 -->
+		<part repeat="0x300">00</part>
 
 		<!-- encryption_device: 315-5110 -->
 		<part>

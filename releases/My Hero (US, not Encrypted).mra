@@ -39,7 +39,7 @@
 	<rom index="1">
 		<part>80</part>
 	</rom>
-	<rom index="0" md5="none" type="merged" zip="myhero.zip">
+	<rom index="0" md5="0466683a863d32c4b138c805635bf6e4" type="merged" zip="myhero.zip">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="0039e1e9" name="epr-69xx.120"/>
 		<part crc="0039e1e9" name="epr-69xx.120"/>
@@ -90,8 +90,8 @@
 	<rom index="2"></rom>
 	<rom index="3" md5="none">
 		<part>
-			00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
-			00 00 D3 00 00 3C 00 49 00 00 C0 17 00 03 00 00
+		00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
+		00 00 D3 00 00 3C 00 49 00 00 C0 17 00 03 00 00
 		</part>
 	</rom>
 	<rom index="4"></rom>

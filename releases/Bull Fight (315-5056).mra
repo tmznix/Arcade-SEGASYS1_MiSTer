@@ -9,7 +9,6 @@
 	<joystick>8-way</joystick>
 	<rotation>horizontal</rotation>
 	<region>World</region>
-	<buttons names="Sword,Cape,-,-,-,Start 1P,Start 2P,Coin,Pause" default="A,B,X,R,L,Start,Select" count="2"/>
 	<switches base="16" default="FF,FC">
 		<!-- SWA -->
 		<dip name="Coin A" bits="0,3" ids="1/1,1/1 2/3,1/1 4/5,1/1 5/6,2/1 4/3,2/1 5/3 6/4,2/3,4/1,3/1,2/1,1/6,1/5,1/4,1/3,1/2,1/1"/>
@@ -22,10 +21,8 @@
 		<dip name="Lives" bits="10,11" ids="Infinite,5,4,3"/>
 		<dip name="Bonus Life" bits="12,13" ids="None,70k,50k,30k"/>
 	</switches>
-	<rom index="1">
-		<part>80</part>
-	</rom>
-	<rom index="0" zip="bullfgt.zip" type="merged" md5="None">
+	<buttons names="Sword,Cape,-,-,-,Start 1P,Start 2P,Coin,Pause" default="A,B,X,R,L,Start,Select" count="2"/>
+	<rom index="0" zip="bullfgt.zip" type="merged" md5="aaeeae95b2bff945b24c4d68a581849d">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="02a37602" name="epr-6077.120"/>
 		<part crc="02a37602" name="epr-6077.120"/>
@@ -78,20 +75,33 @@
 
 		<!-- encryption_device: 315-5056 -->
 		<part>
-			a0 a8 20 28 80 a0 00 20 20 28 00 08 20 28 00 08
-			a0 a8 20 28 08 28 00 20 88 08 a8 28 88 08 a8 28
-			a0 a8 20 28 20 28 00 08 28 a8 20 a0 20 28 00 08
-			a0 a8 20 28 08 28 00 20 88 08 a8 28 88 08 a8 28
-			28 a8 20 a0 a0 a8 20 28 88 08 a8 28 80 a0 00 20
-			28 a8 20 a0 08 28 00 20 28 a8 20 a0 80 a0 00 20
-			20 28 00 08 20 28 00 08 88 08 a8 28 20 28 00 08
-			08 28 00 20 80 a0 00 20 08 28 00 20 88 08 a8 28
+		a0 a8 20 28 80 a0 00 20
+		20 28 00 08 20 28 00 08
+		a0 a8 20 28 08 28 00 20
+		88 08 a8 28 88 08 a8 28
+		a0 a8 20 28 20 28 00 08
+		28 a8 20 a0 20 28 00 08
+		a0 a8 20 28 08 28 00 20
+		88 08 a8 28 88 08 a8 28
+		28 a8 20 a0 a0 a8 20 28
+		88 08 a8 28 80 a0 00 20
+		28 a8 20 a0 08 28 00 20
+		28 a8 20 a0 80 a0 00 20
+		20 28 00 08 20 28 00 08
+		88 08 a8 28 20 28 00 08
+		08 28 00 20 80 a0 00 20
+		08 28 00 20 88 08 a8 28
 		</part>
+	</rom>
+	<rom index="1">
+		<part>80</part>
 	</rom>
 	<rom index="3" md5="none">
 		<part>
-			00 00 00 00 00 FF 00 02 00 02 00 01 00 FF 00 00
-			00 00 D3 00 00 3C 00 49 00 00 C0 14 00 03 00 02
+		00 00 00 00 00 FF 00 02
+		00 02 00 01 00 FF 00 00
+		00 00 D3 00 00 3C 00 49
+		00 00 C0 14 00 03 00 02
 		</part>
 	</rom>
 	<nvram index="4" size="63"/>

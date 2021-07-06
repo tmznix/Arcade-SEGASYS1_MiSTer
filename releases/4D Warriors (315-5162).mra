@@ -25,7 +25,7 @@
 	<rom index="1">
 		<part>04</part>
 	</rom>
-	<rom index="0" zip="4dwarrio.zip" type="merged" md5="None">
+	<rom index="0" zip="4dwarrio.zip" type="merged" md5="3a1b4daebee8c5a8ab74c10f76194695">
 		<!-- soundcpu, size: 0x8000 -->
 		<part crc="5241c009" name="4d.120"/>
 		<part crc="5241c009" name="4d.120"/>
