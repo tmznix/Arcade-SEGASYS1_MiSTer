@@ -22,6 +22,7 @@ Currently supported System 1 titles:
 * I'm Sorry
 * Mister Viking
 * My Hero
+* Noboranka / Zippy Bug (bootleg)
 * Pitfall II
 * Rafflesia
 * Regulus
@@ -34,14 +35,21 @@ Currently supported System 1 titles:
 * Water Match
 * Wonder Boy
 
-Sega System 1 games currently **not yet** supported:
-
-* Noboranka / Zippy Bug
-
 Currently supported SEGA System 2 titles and versions of System 1 games:
 
 * Choplifter
 * Wonder Boy
+
+Sega System 2 games currently **not yet** supported:
+
+* 119
+* DakkoChan House
+* Senryaku Game Bopeep
+* Shooting Master
+* Toki no Senshi - Chrono Soldier
+* Ufo Senshi Yohko Chan
+* Warball
+* Wonder Boy in Monster Land
 
 ## High score save/load
 
