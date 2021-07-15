@@ -20,6 +20,9 @@ module HVGEN
         input signed [3:0] VOFFS
 );
 
+localparam [8:0] width = 320;
+localparam [8:0] height = 260;
+
 reg [8:0] hcnt = 0;
 reg [8:0] vcnt = 0;
 
@@ -27,13 +30,10 @@ assign HPOS = hcnt-16;
 assign VPOS = vcnt;
 
 wire [8:0] HS_B = 296+HOFFS;
-wire [8:0] HS_E = HS_B+16;
+wire [8:0] HS_E = HS_B+32-width;
 
 wire [8:0] VS_B = 234+VOFFS;
 wire [8:0] VS_E = VS_B+4;
-
-localparam [8:0] width = 320;
-localparam [8:0] height = 260;
 
 reg hblk240;
 reg hblk256;
@@ -52,7 +52,7 @@ always @(posedge CLK) begin
 		hblk256 <= (hcnt < 29) | (hcnt >= 285);
 		hblk240 <= (hcnt < 37) | (hcnt >= 277);
 		VBLK <= (vcnt >= 224);
-		HSYN <= (hcnt < HS_B) | (hcnt >= HS_E);
+		HSYN <= (hcnt < HS_B) & (hcnt >= HS_E);
 		VSYN <= (vcnt < VS_B) | (vcnt >= VS_E);
 		oRGB <= (HBLK|VBLK) ? 12'h0 : iRGB;
 	end
