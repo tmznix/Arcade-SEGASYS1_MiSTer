@@ -17,6 +17,7 @@ module SEGASYS1_MAIN
 	input   [7:0]	DSW0,
 	input   [7:0]	DSW1,
 	input           system2,
+	input           nobo_memory,
 
 	input				VBLK,
 	input				VIDCS,
@@ -54,12 +55,18 @@ wire  [7:0]	CPUDI;
 wire	cpu_m1;
 wire	cpu_mreq, cpu_iorq;
 wire	_cpu_rd, _cpu_wr;
+wire    [15:0] cpu_ad;
+
+// Invert address lines for Noboranka aka Zippy Bug
+assign  CPUAD = (nobo_memory && (cpu_ad[15:12] == 4'b1100 || cpu_ad[15:12] == 4'b1111)) ?
+		cpu_ad ^ 16'h3000 :
+		cpu_ad;
 
 Z80IP maincpu(
 	.reset(RESET),
 	.clk(CLK40M),
 	.clk_en(CPUCL_EN),
-	.adr(CPUAD),
+	.adr(cpu_ad),
 	.data_in(CPUDI),
 	.data_out(CPUDO),
 	.m1(cpu_m1),
@@ -137,32 +144,44 @@ mainram(
 wire cpu_cs_sreq = ((CPUAD[7:0] == 8'h14)|(CPUAD[7:0] == 8'h18)) & cpu_iorq;
 wire cpu_cs_vidm = ((CPUAD[7:0] == 8'h15)|(CPUAD[7:0] == 8'h19)) & cpu_iorq;
 
+// noboronka bootleg protection ports
+wire cpu_cs_1c = (CPUAD[7:0] == 8'h1c) & cpu_iorq;
+wire cpu_cs_22 = (CPUAD[7:0] == 8'h22) & cpu_iorq;
+wire cpu_cs_23 = (CPUAD[7:0] == 8'h23) & cpu_iorq;
+wire cpu_cs_24 = (CPUAD[7:0] == 8'h24) & cpu_iorq;
+
 wire cpu_wr_sreq = cpu_cs_sreq & _cpu_wr;
 wire cpu_wr_vidm = cpu_cs_vidm & _cpu_wr;
+
+reg [7:0] nobb_protection;
 
 always @(posedge CLK40M or posedge RESET) begin
 	if (RESET) begin
 		VIDMD <= 0;
 		SNDRQ <= 0;
 		SNDNO <= 0;
+		nobb_protection <= 0;
 	end
 	else begin
 		if (cpu_wr_vidm)
 			VIDMD <= CPUDO;
-		if (cpu_wr_sreq) begin
+		SNDRQ <= cpu_wr_sreq;
+		if (cpu_wr_sreq)
 			SNDNO <= CPUDO;
-			SNDRQ <= 1'b1;
-		end else
-			SNDRQ <= 1'b0;
 
+		if (cpu_cs_24 & _cpu_wr)
+			nobb_protection <= CPUDO;
 	end
 end
 
 
 // CPU data selector
-dataselector6 mcpudisel(
+dataselector9 mcpudisel(
 	CPUDI,
 	VIDCS & cpu_mreq, VIDDO,
+	cpu_cs_1c, 8'h80,
+	cpu_cs_22, 8'h00,
+	cpu_cs_23, nobb_protection,
 	cpu_cs_vidm,  VIDMD,
 	cpu_cs_port,  cpu_rd_port,
 	cpu_cs_mram,  cpu_rd_mram,

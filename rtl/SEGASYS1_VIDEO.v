@@ -27,9 +27,9 @@ module SEGASYS1_VIDEO
 	output   [11:0]	RGB,
 
 	input           system2,
-	input           system2_rowscroll,
+	input           rowscroll,
 	input				PALDSW,
-	input	  [15:0]	cpu_ad,
+	input	 [15:0]	cpu_ad,
 	input				cpu_wr,
 	input		[7:0]	cpu_dw,
 	output			cpu_rd,
@@ -89,7 +89,7 @@ VIDCPUINTF intf(
 	mixcoll_ad, mixcoll,
 	sprcoll_ad, sprcoll,
 	scrx, scry,
-	system2, system2_rowscroll,
+	system2, rowscroll,
 	PAUSE_N,HSAD,HSDO,HSDI,HSWE
 );
 
@@ -239,7 +239,7 @@ module VIDCPUINTF
 	output reg  [7:0] scry,
 
 	input           system2,
-	input           system2_rowscroll,
+	input           rowscroll,
 
 	input 			PAUSE_N,
 	input  [15:0]	HSAD,
@@ -307,10 +307,10 @@ always @ (posedge clk or posedge RESET) begin
 					scrx_row[cpu_ad[5:0]] <= cpu_dw;
 				else if (cpu_ad[7:0] == 8'hba)
 					scry <= cpu_dw;
-			if (system2_rowscroll)
-				scrx = {scrx_row[{PV[7:3],1'b1}],scrx_row[{PV[7:3],1'b0}]};
+			if (rowscroll)
+				scrx <= {scrx_row[{PV[7:3],1'b1}],scrx_row[{PV[7:3],1'b0}]};
 			else
-				scrx = {scrx_row[1],scrx_row[0]};
+				scrx <= {scrx_row[1],scrx_row[0]};
 		end else begin
 			if (cpu_wr_scrreg1) begin
 				case(cpu_ad[7:0])

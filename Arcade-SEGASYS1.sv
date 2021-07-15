@@ -177,7 +177,7 @@ assign BUTTONS   = 0;
 assign AUDIO_MIX = 0;
 assign FB_FORCE_BLANK = '0;
 
-wire screen_H = status[6]|~SYSMODE[1]|direct_video;
+wire screen_H = status[6]|~SYSMODE[0][1]|direct_video;
 wire [1:0] ar = status[15:14];
 
 assign VIDEO_ARX = (!ar) ? (screen_H ? 8'd4 : 8'd3) : (ar - 1'd1);
@@ -185,7 +185,7 @@ assign VIDEO_ARY = (!ar) ? (screen_H ? 8'd3 : 8'd4) : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"A.SEGASYS1;;",
+	"SEGA System 1 & 2;;",
 	"-;",
 	"H0OEF,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"H0O6,Orientation,Vert,Horz;",
@@ -277,13 +277,14 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.spinner_1(spinner_1)
 );
 
-// SYSMODE: [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6]=SYS2 rowscroll,[7] button1&2 swap
-reg [7:0] SYSMODE;
-reg [7:0] DSW[8];
+// SYSMODE[0]: [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6]=SYS2 rowscroll,[7] button1&2 swap
+// SYSMODE[1]: [0]=Noboranka memory layout
+reg [7:0] SYSMODE[4];
+reg [7:0] DSW[2];
 always @(posedge clk_sys) begin
 	if (ioctl_wr) begin
-		if ((ioctl_index==1  ) && !ioctl_addr) SYSMODE <= ioctl_dout;
-		if ((ioctl_index==254) && !ioctl_addr[24:3]) DSW[ioctl_addr[2:0]] <= ioctl_dout;
+		if ((ioctl_index==1  ) && !ioctl_addr[24:2]) SYSMODE[ioctl_addr[1:0]] <= ioctl_dout;
+		if ((ioctl_index==254) && !ioctl_addr[24:1]) DSW[ioctl_addr[0]] <= ioctl_dout;
 	end
 end
 
@@ -370,7 +371,7 @@ arcade_video #(288,12) arcade_video
 
 
 wire no_rotate = screen_H;
-wire rotate_ccw = ~SYSMODE[4];
+wire rotate_ccw = ~SYSMODE[0][4];
 screen_rotate screen_rotate (.*);
 
 wire			PCLK_EN;
@@ -388,7 +389,7 @@ HVGEN hvgen
 	.VBLK(vblank),
 	.HSYN(hs),
 	.VSYN(vs),
-	.H240(SYSMODE[2]),
+	.H240(SYSMODE[0][2]),
 	.HOFFS(HOFFS),
 	.VOFFS(VOFFS)
 );
@@ -404,16 +405,16 @@ assign AUDIO_S = 0; // unsigned PCM
 ///////////////////////////////////////////////////
 
 wire iRST = RESET | status[0] | buttons[1];
-wire [2:0] triggers = {SYSMODE[7] ? {m_trig_2, m_trig_1} : {m_trig_1, m_trig_2}, m_trig_3};
+wire [2:0] triggers = {SYSMODE[0][7] ? {m_trig_2, m_trig_1} : {m_trig_1, m_trig_2}, m_trig_3};
 
 reg [7:0] INP0, INP1, INP2;
 always @(posedge clk_sys) begin
-	if (SYSMODE[5]) begin
+	if (SYSMODE[0][5]) begin
 		INP0 = ~spin;
 		INP1 = ~spin;
 		INP2 = ~{m_trig_1 || ps2_mouse[2:0], m_trig_1 || ps2_mouse[2:0], m_start2, m_start1, 3'b000, m_coin};
 	end
-	else if (SYSMODE[3]) begin
+	else if (SYSMODE[0][3]) begin
 		INP0 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
 		INP1 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
 		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 3'b000, m_coin};
@@ -462,8 +463,9 @@ SEGASYSTEM1 GameCore
 	.DSW0(DSW[0]),
 	.DSW1(DSW[1]),
 
-	.system2(SYSMODE[0]),
-	.system2_rowscroll(SYSMODE[6]),
+	.system2(SYSMODE[0][0]),
+	.rowscroll(SYSMODE[0][6]),
+	.nobo_memory(SYSMODE[1][0]),
 
 	.PH(HPOS),
 	.PV(VPOS),
