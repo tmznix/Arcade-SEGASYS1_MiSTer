@@ -27,7 +27,7 @@ reg [8:0] hcnt = 0;
 reg [8:0] vcnt = 0;
 
 assign HPOS = hcnt-16;
-assign VPOS = vcnt;
+assign VPOS = !vcnt[8] ? vcnt : vcnt - height;
 
 wire [8:0] HS_B = 296+HOFFS;
 wire [8:0] HS_E = HS_B+32-width;
