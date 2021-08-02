@@ -37,11 +37,17 @@ module SEGASYSTEM1
 	input  [7:0]	HSDI,
 	input				HSWE
 
+	,input show_banks
+	,input flip_screen
+	,input [2:0] test1
+	,input [2:0] test2
+	,input [2:0] test3
+	,input [2:0] test4
 	);
 
 // CPU
 wire [15:0] CPUAD;
-wire  [7:0] CPUDO,VIDDO,SNDNO,VIDMD;
+wire  [7:0] CPUDO,VIDDO,SNDNO,VIDMD,SNDCTL;
 wire			CPUWR,VIDCS,VBLK;
 wire			SNDRQ;
 
@@ -66,7 +72,7 @@ SEGASYS1_MAIN Main (
 	.CPUAD(CPUAD),.CPUDO(CPUDO),.CPUWR(CPUWR),
 	.VBLK(VBLK),.VIDCS(VIDCS),.VIDDO(VIDDO),
 	.SNDRQ(SNDRQ),.SNDNO(SNDNO),
-	.VIDMD(VIDMD),
+	.VIDMD(VIDMD),.SNDCTL(SNDCTL),
 	
 	.ROMCL(ROMCL),.ROMAD(ROMAD),.ROMDT(ROMDT),.ROMEN(ROMEN),
 	
@@ -81,6 +87,7 @@ SEGASYS1_VIDEO Video (
 	.RESET(reset),.VCLKx8(clk40M),
 	.PH(PH),.PV(PV),.VFLP(VIDMD[7]),
 	.VBLK(VBLK),.PCLK_EN(PCLK_EN),.RGB(OPIX),
+	.vram_bank(system2 ? SNDCTL[2:1] : 0),
 	.system2(system2),.rowscroll(rowscroll),.PALDSW(1'b0),
 
 	.cpu_ad(CPUAD),.cpu_wr(CPUWR),.cpu_dw(CPUDO),

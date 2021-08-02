@@ -30,6 +30,7 @@ module SEGASYS1_MAIN
 	output reg [7:0] SNDNO,
 	
 	output reg [7:0] VIDMD,
+	output reg [7:0] SNDCTL,
 
 	input				ROMCL,		// Downloaded ROM image
 	input   [24:0]	ROMAD,
@@ -143,6 +144,7 @@ mainram(
 // Video mode latch & Sound Request
 wire cpu_cs_sreq = ((CPUAD[7:0] == 8'h14)|(CPUAD[7:0] == 8'h18)) & cpu_iorq;
 wire cpu_cs_vidm = ((CPUAD[7:0] == 8'h15)|(CPUAD[7:0] == 8'h19)) & cpu_iorq;
+wire cpu_cs_sctl = (CPUAD[7:0] == 8'h16) & cpu_iorq;
 
 // noboronka bootleg protection ports
 wire cpu_cs_1c = (CPUAD[7:0] == 8'h1c) & cpu_iorq;
@@ -152,6 +154,7 @@ wire cpu_cs_24 = (CPUAD[7:0] == 8'h24) & cpu_iorq;
 
 wire cpu_wr_sreq = cpu_cs_sreq & _cpu_wr;
 wire cpu_wr_vidm = cpu_cs_vidm & _cpu_wr;
+wire cpu_wr_sctl = cpu_cs_sctl & _cpu_wr;
 
 reg [7:0] nobb_protection;
 
@@ -160,11 +163,14 @@ always @(posedge CLK40M or posedge RESET) begin
 		VIDMD <= 0;
 		SNDRQ <= 0;
 		SNDNO <= 0;
+		SNDCTL <= 0;
 		nobb_protection <= 0;
 	end
 	else begin
 		if (cpu_wr_vidm)
 			VIDMD <= CPUDO;
+		if (cpu_wr_sctl)
+			SNDCTL <= CPUDO;
 		SNDRQ <= cpu_wr_sreq;
 		if (cpu_wr_sreq)
 			SNDNO <= CPUDO;
@@ -176,15 +182,16 @@ end
 
 
 // CPU data selector
-dataselector9 mcpudisel(
+dataselector10 mcpudisel(
 	CPUDI,
 	VIDCS & cpu_mreq, VIDDO,
 	cpu_cs_1c, 8'h80,
 	cpu_cs_22, 8'h00,
 	cpu_cs_23, nobb_protection,
-	cpu_cs_vidm,  VIDMD,
-	cpu_cs_port,  cpu_rd_port,
-	cpu_cs_mram,  cpu_rd_mram,
+	cpu_cs_vidm, VIDMD,
+	cpu_cs_sctl, SNDCTL,
+	cpu_cs_port, cpu_rd_port,
+	cpu_cs_mram, cpu_rd_mram,
 	cpu_cs_mrom0, ~nocrypt ? cpu_rd_mrom0 : cpu_m1 ? cpu_rd_mromd : rdt,
 	cpu_cs_mrom1, cpu_rd_mrom1,
 	8'hFF

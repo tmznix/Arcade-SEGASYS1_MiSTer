@@ -156,18 +156,21 @@ endmodule
 //----------------------------------
 module VRAMs
 (
-	input					clk0,
-	input       [9:0]	adr0,
-	output reg  [7:0]	dat0,
-	input       [7:0]	dtw0,
-	input					wen0,
+	input              clk0,
+	input      [12:0]  adr0,
+	output reg  [7:0]  dat0,
+	input       [7:0]  dtw0,
+	input              wen0,
 
-	input					clk1,
-	input       [9:0]	adr1,
-	output reg  [7:0]	dat1
+	input              clk1,
+	input      [12:0]  adr1,
+	output reg  [7:0]  dat1,
+
+	input      [12:0]  adr2,
+	output reg  [7:0]  dat2
 );
 
-reg [7:0] core [0:1023];
+reg [7:0] core ['h2000];
 
 always @( posedge clk0 ) begin
 	if (wen0) core[adr0] <= dtw0;
@@ -176,32 +179,39 @@ end
 
 always @( posedge clk1 ) begin
 	dat1 <= core[adr1];
+	dat2 <= core[adr2];
 end
 
 endmodule
 
 module VRAM
 (
-	input					clk0,
-	input     [10:0]	adr0,
-	output     [7:0]	dat0,
-	input      [7:0]	dtw0,
-	input					wen0,
+	input            clk0,
+	input    [13:0]	 adr0,
+	output    [7:0]	 dat0,
+	input     [7:0]	 dtw0,
+	input            wen0,
 
-	input					clk1,
-	input       [9:0]	adr1,
-	output     [15:0]	dat1
+	input            clk1,
+	input    [12:0]	 adr1,
+	output   [15:0]  dat1,
+	input    [12:0]  adr2,
+	output   [15:0]  dat2
 );
 
 wire even = ~adr0[0];
 wire  odd =  adr0[0];
 
-wire [7:0] do00, do01, do10, do11;
-VRAMs ram0( clk0, adr0[10:1], do00, dtw0, wen0 & even, clk1, adr1, do10 );
-VRAMs ram1( clk0, adr0[10:1], do01, dtw0, wen0 &  odd, clk1, adr1, do11 );
+wire [7:0] do00, do01, do10, do11, do20, do21;
 
-assign dat0 = adr0[0] ? do01 : do00;
+VRAMs ram0(clk0, adr0[13:1], do00, dtw0, wen0 & even,
+           clk1, adr1, do10, adr2, do20);
+VRAMs ram1(clk0, adr0[13:1], do01, dtw0, wen0 &  odd,
+           clk1, adr1, do11, adr2, do21);
+
+assign dat0 = odd ? do01 : do00;
 assign dat1 = { do11, do10 };
+assign dat2 = { do21, do20 };
 
 endmodule
 
@@ -215,7 +225,7 @@ module LineBuf
 	input	     [9:0]	radr,
 	input	   			clre,
 	output reg [10:0]	rdat,
-	
+
 	input	    			clkw,
 	input	      [9:0]	wadr,
 	input	     [10:0]	wdat,
@@ -366,7 +376,7 @@ endmodule
 //----------------------------------
 //  Data Selector 9 to 1
 //----------------------------------
-module dataselector9(
+module dataselector10(
 
 	output [7:0] oDATA,
 
@@ -379,6 +389,7 @@ module dataselector9(
 	input iSEL6, input [7:0] iDATA6,
 	input iSEL7, input [7:0] iDATA7,
 	input iSEL8, input [7:0] iDATA8,
+	input iSEL9, input [7:0] iDATA9,
 
 	input [7:0] dData
 );
@@ -392,6 +403,7 @@ assign oDATA = iSEL0 ? iDATA0 :
 					iSEL6 ? iDATA6 :
 					iSEL7 ? iDATA7 :
 					iSEL8 ? iDATA8 :
+					iSEL9 ? iDATA9 :
 					dData;
 
 endmodule

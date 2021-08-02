@@ -63,7 +63,7 @@ wire side = VPOS[0];
 
 reg   [9:0] rad0,rad1=1;
 LineBuf lbuf(
-	VCLKx8, rad0, (rad0==rad1), sprpx, 
+	VCLKx8, rad0, (rad0==rad1), sprpx,
 	VCLKx8, {~side,xpos}, wdat, we & (wdat[3:0] != 4'h0), _prevpix
 );
 always @(posedge VCLKx8) begin
@@ -166,7 +166,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 				waitcnt <= 8; // wait for sprite data after address setup
 				phaseHD <= 6;
 			end
-			
+
 			// rendering to linebuf
 			6: begin
 				if (waitcnt == 0) begin

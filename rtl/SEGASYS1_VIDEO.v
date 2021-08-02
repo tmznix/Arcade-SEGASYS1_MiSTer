@@ -26,6 +26,7 @@ module SEGASYS1_VIDEO
 	output			PCLK_EN,
 	output   [11:0]	RGB,
 
+	input     [1:0] vram_bank,
 	input           system2,
 	input           rowscroll,
 	input				PALDSW,
@@ -63,18 +64,19 @@ wire  [7:0] palout;
 wire  [9:0] sprad;
 wire [15:0] sprdt;
 
-wire  [9:0] vram0ad;
+wire [12:0] vram0ad;
 wire [15:0] vram0dt;
-wire  [9:0] vram1ad;
+wire [12:0] vram1ad;
 wire [15:0] vram1dt;
 
-wire  [5:0]	mixcoll_ad;
-wire 			mixcoll;
-wire  [9:0]	sprcoll_ad;
-wire 			sprcoll;
+wire  [5:0] mixcoll_ad;
+wire        mixcoll;
+wire  [9:0] sprcoll_ad;
+wire 	    sprcoll;
 
-wire [15:0]	scrx;
+wire [15:0] scrx;
 wire  [7:0] scry;
+wire [11:0] bg_pages;
 
 VIDCPUINTF intf(
 	RESET,
@@ -86,10 +88,12 @@ VIDCPUINTF intf(
 	sprad, sprdt,
 	vram0ad, vram0dt,
 	vram1ad, vram1dt,
+	vram_bank,
 	mixcoll_ad, mixcoll,
 	sprcoll_ad, sprcoll,
 	scrx, scry,
 	system2, rowscroll,
+	bg_pages,
 	PAUSE_N,HSAD,HSDO,HSDI,HSWE
 );
 
@@ -151,10 +155,12 @@ always @(posedge VCLKx8) begin
 	end
 end
 
-TileChrROM tilechr(VCLKx8, tilead, tiledt, ROMCL,ROMAD,ROMDT,ROMEN );
-BGGEN bg0(VCLKx8,VCLK_EN,BG0HP,BG0VP,vram0ad,vram0dt,tile0ad,tile0dt,BG0PX);
-BGGEN bg1(VCLKx8,VCLK_EN,BG1HP,BG1VP,vram1ad,vram1dt,tile1ad,tile1dt,BG1PX);
+wire [11:0] pages;
+assign pages = !system2 ? 12'b001001001001 : bg_pages;
 
+TileChrROM tilechr(VCLKx8, tilead, tiledt, ROMCL,ROMAD,ROMDT,ROMEN );
+BGGEN bg0(VCLKx8,VCLK_EN,BG0HP,BG0VP,0,    vram0ad,vram0dt,tile0ad,tile0dt,BG0PX);
+BGGEN bg1(VCLKx8,VCLK_EN,BG1HP,BG1VP,pages,vram1ad,vram1dt,tile1ad,tile1dt,BG1PX);
 
 // Color Mixer & RGB Output
 wire [7:0] cltidx,cltval;
@@ -223,11 +229,12 @@ module VIDCPUINTF
 	input		[9:0] sprad,
 	output  [15:0] sprdt,
 
-	input	   [9:0] vram0ad,
+	input	   [12:0] vram0ad,
 	output  [15:0] vram0dt,
 
-	input    [9:0] vram1ad,
+	input    [12:0] vram1ad,
 	output  [15:0]	vram1dt,
+	input    [1:0] vram_bank,
 
 	input    [5:0]	mixcoll_ad,
 	input				mixcoll,
@@ -240,6 +247,7 @@ module VIDCPUINTF
 
 	input           system2,
 	input           rowscroll,
+	output [11:0] bg_pages,
 
 	input 			PAUSE_N,
 	input  [15:0]	HSAD,
@@ -253,8 +261,7 @@ wire cpu_cs_palram;
 wire cpu_cs_spram;
 wire cpu_cs_mixcoll;
 wire cpu_cs_sprcoll;
-wire cpu_cs_vram0;
-wire cpu_cs_vram1;
+wire cpu_cs_vram;
 
 wire cpu_wr_palram;
 wire cpu_wr_spram;
@@ -262,10 +269,10 @@ wire cpu_wr_mixcoll;
 wire cpu_wr_mixcollclr;
 wire cpu_wr_sprcoll;
 wire cpu_wr_sprcollclr;
-wire cpu_wr_vram0;
-wire cpu_wr_vram1;
+wire cpu_wr_vram;
 wire cpu_wr_scrreg1;
 wire cpu_wr_scrreg0;
+wire cpu_wr_bgpage;
 
 VIDADEC adecs(
 	cpu_ad,
@@ -275,8 +282,7 @@ VIDADEC adecs(
 	cpu_cs_spram,
 	cpu_cs_mixcoll,
 	cpu_cs_sprcoll,
-	cpu_cs_vram0,
-	cpu_cs_vram1,
+	cpu_cs_vram,
 
 	cpu_wr_palram,
 	cpu_wr_spram,
@@ -284,25 +290,28 @@ VIDADEC adecs(
 	cpu_wr_mixcollclr,
 	cpu_wr_sprcoll,
 	cpu_wr_sprcollclr,
-	cpu_wr_vram0,
-	cpu_wr_vram1,
+	cpu_wr_vram,
 	cpu_wr_scrreg0,
 	cpu_wr_scrreg1,
+	cpu_wr_bgpage,
 
 	cpu_rd
 );
 
-reg [7:0] scrx_row[0:63];
+reg [7:0] scrx_row[64];
+reg [2:0] bg_page[4];
+assign bg_pages = {bg_page[3],bg_page[2],bg_page[1],bg_page[0]};
 
-// Scroll Register
+// Scroll and background plane registers
 always @ (posedge clk or posedge RESET) begin
 	if (RESET) begin
 		scrx <= 0;
 		scry <= 0;
-	end
-	else begin
+	end else begin
 		if (system2) begin
-			if (cpu_wr_scrreg0)
+			if (cpu_wr_bgpage & !vram_bank)
+				bg_page[cpu_ad[2:1]] <= cpu_dw[2:0];
+			else if (cpu_wr_scrreg0 & !vram_bank)
 				if (cpu_ad[6])
 					scrx_row[cpu_ad[5:0]] <= cpu_dw;
 				else if (cpu_ad[7:0] == 8'hba)
@@ -326,13 +335,11 @@ end
 
 // Hiscore address decoder
 wire HS_CS_SPRAM = (HSAD[15:11] == 5'b1101_0) & ~PAUSE_N;
-wire HS_CS_VRAM0 = (HSAD[15:11] == 5'b1110_0) & ~PAUSE_N;
-wire HS_CS_VRAM1 = (HSAD[15:11] == 5'b1110_1) & ~PAUSE_N;
+wire HS_CS_VRAM  = (HSAD[15:12] == 4'b1110  ) & ~PAUSE_N;
 
 assign HSDO = HS_CS_SPRAM ? cpu_rd_spram :
-					HS_CS_VRAM0 ? cpu_rd_vram0 : 
-					HS_CS_VRAM1 ? cpu_rd_vram1 : 
-										8'b00000000;
+              HS_CS_VRAM ? cpu_rd_vram :
+              8'b00000000;
 
 // Palette RAM
 wire  [7:0] cpu_rd_palram;
@@ -370,40 +377,26 @@ COLLRAM_S sprc(
 
 
 // VRAM
-wire  [7:0] cpu_rd_vram0, cpu_rd_vram1;
+wire  [7:0] cpu_rd_vram;
 // VRAM0 hiscore mux
-wire [10:0]	vram0ad0;
-wire [7:0]	vram0dw0;
-wire 			vram0wr0;
-assign vram0ad0 = HS_CS_VRAM0 ? HSAD[10:0] : cpu_ad[10:0];
-assign vram0dw0 = HS_CS_VRAM0 ? HSDI : cpu_dw;
-assign vram0wr0 = HS_CS_VRAM0 ? HSWE : cpu_wr_vram0;
+wire [13:0]	vram_ad;
+wire [7:0]	vram_dw;
+wire 		vram_wr;
+assign vram_ad = {vram_bank, HS_CS_VRAM ? HSAD[11:0] : cpu_ad[11:0]};
+assign vram_dw = HS_CS_VRAM ? HSDI : cpu_dw;
+assign vram_wr = HS_CS_VRAM ? HSWE : cpu_wr_vram;
 
-VRAM vram0(
-	clk, vram0ad0, cpu_rd_vram0, vram0dw0, vram0wr0,
-	clk, vram0ad, vram0dt
-);
-
-// VRAM1 hiscore mux
-wire [10:0]	vram1ad0;
-wire [7:0]	vram1dw0;
-wire 			vram1wr0;
-assign vram1ad0 = HS_CS_VRAM1 ? HSAD[10:0] : cpu_ad[10:0];
-assign vram1dw0 = HS_CS_VRAM1 ? HSDI : cpu_dw;
-assign vram1wr0 = HS_CS_VRAM1 ? HSWE : cpu_wr_vram1;
-
-VRAM vram1(
-	clk, vram1ad0, cpu_rd_vram1, vram1dw0, vram1wr0,
-	clk, vram1ad, vram1dt
+VRAM vram(
+	clk, vram_ad, cpu_rd_vram, vram_dw, vram_wr,
+	clk, vram0ad, vram0dt, vram1ad, vram1dt
 );
 
 
 // CPU Read Data Selector
-dataselector6 videodsel(
+dataselector5 videodsel(
 	cpu_dr,
 	cpu_cs_palram,  cpu_rd_palram,
-	cpu_cs_vram0,   cpu_rd_vram0,
-	cpu_cs_vram1,   cpu_rd_vram1,
+	cpu_cs_vram,    cpu_rd_vram,
 	cpu_cs_spram,   cpu_rd_spram,
 	cpu_cs_sprcoll, cpu_rd_sprcoll,
 	cpu_cs_mixcoll, cpu_rd_mixcoll,
@@ -471,7 +464,7 @@ assign VBLK = (PV == 9'd224) & (PH <= 9'd64);
 assign HPOS = PH+1'd1;
 assign VPOS = PV;
 
-wire [7:0] BGHSCR = scrx[8:1]+4'd14;
+wire [8:0] BGHSCR = scrx[8:1]+4'd14;
 wire [7:0] BGVSCR = scry;
 
 assign BG0HP = system2 ? HPOS+8'd3 : (HPOS-BGHSCR)+3;
@@ -495,8 +488,7 @@ module VIDADEC
 	output		 cpu_cs_spram,
 	output		 cpu_cs_mixcoll,
 	output		 cpu_cs_sprcoll,
-	output		 cpu_cs_vram0,
-	output		 cpu_cs_vram1,
+	output		 cpu_cs_vram,
 
 	output		 cpu_wr_palram,
 	output		 cpu_wr_spram,
@@ -504,10 +496,10 @@ module VIDADEC
 	output		 cpu_wr_mixcollclr,
 	output		 cpu_wr_sprcoll,
 	output		 cpu_wr_sprcollclr,
-	output		 cpu_wr_vram0,
-	output		 cpu_wr_vram1,
+	output		 cpu_wr_vram,
 	output		 cpu_wr_scrreg0,
 	output		 cpu_wr_scrreg1,
+	output		 cpu_wr_bgpage,
 
 	output		 cpu_rd
 );
@@ -518,10 +510,10 @@ assign cpu_cs_mixcoll    = (cpu_ad[15:10] == 6'b1111_00);
 wire   cpu_cs_mixcollclr = (cpu_ad[15:10] == 6'b1111_01);
 assign cpu_cs_sprcoll    = (cpu_ad[15:10] == 6'b1111_10);
 wire   cpu_cs_sprcollclr = (cpu_ad[15:10] == 6'b1111_11);
-assign cpu_cs_vram0      = (cpu_ad[15:11] == 5'b1110_0);
-assign cpu_cs_vram1      = (cpu_ad[15:11] == 5'b1110_1);
+assign cpu_cs_vram       = (cpu_ad[15:12] == 4'b1110);
 wire   cpu_cs_scrreg0    = (cpu_ad[15: 7] == 9'b1110_0111_1);
 wire   cpu_cs_scrreg1    = (cpu_ad[15: 8] == 8'b1110_1111);
+wire   cpu_cs_bgpage     = (cpu_ad[15: 3] == 13'b1110_0111_0100_0) & !cpu_ad[0];
 
 
 assign cpu_wr_palram     = cpu_cs_palram     & cpu_wr;
@@ -530,15 +522,14 @@ assign cpu_wr_mixcoll    = cpu_cs_mixcoll    & cpu_wr;
 assign cpu_wr_mixcollclr = cpu_cs_mixcollclr & cpu_wr;
 assign cpu_wr_sprcoll    = cpu_cs_sprcoll    & cpu_wr;
 assign cpu_wr_sprcollclr = cpu_cs_sprcollclr & cpu_wr;
-assign cpu_wr_vram0      = cpu_cs_vram0      & cpu_wr;
-assign cpu_wr_vram1      = cpu_cs_vram1      & cpu_wr;
 assign cpu_wr_scrreg0    = cpu_cs_scrreg0    & cpu_wr;
 assign cpu_wr_scrreg1    = cpu_cs_scrreg1    & cpu_wr;
+assign cpu_wr_bgpage     = cpu_cs_bgpage     & cpu_wr;
+assign cpu_wr_vram       = cpu_cs_vram       & cpu_wr;
 
 
 assign cpu_rd = cpu_cs_palram  |
-					 cpu_cs_vram0   |
-					 cpu_cs_vram1   |
+					 cpu_cs_vram    |
 					 cpu_cs_spram   |
 					 cpu_cs_sprcoll |
 					 cpu_cs_mixcoll ;
@@ -556,17 +547,20 @@ module BGGEN
 
 	input   [8:0]	HP,
 	input   [8:0]	VP,
+	input	[11:0]  bg_pages,
 
-	output  [9:0]	VRAMAD,
-	input	 [15:0]	VRAMDT,
+	output  [12:0]	VRAMAD,
+	input	[15:0]	VRAMDT,
 
-	output [14:0]	TILEAD,
-	input	 [23:0]	TILEDT,
+	output  [14:0]	TILEAD,
+	input	[23:0]	TILEDT,
 
 	output [10:0]	OPIX
 );
 
-assign VRAMAD = { VP[7:3], HP[7:3] };
+assign VRAMAD = {VP[8] ? (HP[8] ? bg_pages[8:6] : bg_pages[11:9])
+                       : (HP[8] ? bg_pages[2:0] : bg_pages[5:3]),
+		 VP[7:3], HP[7:3]};
 assign TILEAD = { VRAMDT[15], VRAMDT[10:0], VP[2:0] };
 
 reg  [31:0] BGREG;
@@ -591,7 +585,7 @@ dataselector1_32 pixsft(
 						  { BG_COL/*VRAMDT[12:5]*/,   TILEDT }
 );
 
-assign OPIX = { BGPN, BGCD[7], BGCD[15], BGCD[23] }; 
+assign OPIX = { BGPN, BGCD[7], BGCD[15], BGCD[23] };
 
 endmodule
 
