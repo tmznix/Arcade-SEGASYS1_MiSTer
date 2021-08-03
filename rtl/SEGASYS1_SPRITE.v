@@ -109,7 +109,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 						hitsprnum[hits] <= spr_num;
 						hitsprvps[hits] <= (svpos-sprdt[7:0])+1'd1;
 						hits <= hits+1'd1;
-					end	
+					end
 				end
 				phaseHB <= ( spr_num == `SPEND ) ? 2'h2 : 2'h1;
 				spr_num <= spr_num+1'd1;
@@ -117,7 +117,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 
 			default:;
 
-		endcase 
+		endcase
 
 	end
 
@@ -146,7 +146,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 			// get yofs/xpos/bank
 			2: begin
 				yofs <= hitsprvps[hitr];
-				xpos <= sprdt[8:1]+(system2 ? 22 : 14);
+				xpos <= sprdt[8:1] + sprdt[0] + (system2 ? 21 : 14);
 				bank <= { sprdt[13], sprdt[14], sprdt[15] };
 				spr_ofs <= 2;
 				phaseHD <= 3;
@@ -238,14 +238,14 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 				phaseHD <= ( hitr == (hits-1) ) ? 15 : 1;
 				hitr <= hitr+1'd1;
 			end
-			
+
 			default: begin
 				we      <= 1'b0;
 				sprcoll <= 1'b0;
 			end
 
 		endcase
-		
+
 	end
 end
 
