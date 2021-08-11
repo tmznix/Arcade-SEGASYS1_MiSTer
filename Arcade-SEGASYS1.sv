@@ -185,7 +185,7 @@ assign VIDEO_ARY = (!ar) ? (screen_H ? 8'd3 : 8'd4) : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"SEGA System 1 & 2;;",
+	"a.segasys1+2;;",
 	"-;",
 	"H0OEF,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"H0O6,Orientation,Vert,Horz;",
