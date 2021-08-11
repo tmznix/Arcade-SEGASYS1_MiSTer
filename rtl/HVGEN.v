@@ -29,16 +29,19 @@ reg [8:0] vcnt = 0;
 assign HPOS = hcnt-16;
 assign VPOS = !vcnt[8] ? vcnt : vcnt - height;
 
-wire [8:0] HS_B = 296+HOFFS;
-wire [8:0] HS_E = HS_B+32-width;
+wire [8:0] HS_B0 = 296+HOFFS;
+wire [8:0] HS_B = HS_B0 % width;
+wire [8:0] HS_E = (HS_B+24) % width;
 
-wire [8:0] VS_B = 234+VOFFS;
-wire [8:0] VS_E = VS_B+4;
+wire [8:0] VS_B0 = 234+VOFFS;
+wire [8:0] VS_B = VS_B0 % height;
+wire [8:0] VS_E = (VS_B+4) % height;
 
 reg hblk240;
 reg hblk256;
 
-assign HBLK = H240 ? hblk240 : hblk256;
+wire hblack = H240 ? hblk240 : hblk256;
+assign HBLK = hblk256;
 
 always @(posedge CLK) begin
 	if (PCLK_EN) begin
@@ -52,9 +55,9 @@ always @(posedge CLK) begin
 		hblk256 <= (hcnt < 29) | (hcnt >= 285);
 		hblk240 <= (hcnt < 37) | (hcnt >= 277);
 		VBLK <= (vcnt >= 224);
-		HSYN <= (hcnt < HS_B) & (hcnt >= HS_E);
-		VSYN <= (vcnt < VS_B) | (vcnt >= VS_E);
-		oRGB <= (HBLK|VBLK) ? 12'h0 : iRGB;
+		HSYN <= (hcnt < HS_B) ^ (hcnt < HS_E) ^ (HS_B < HS_E);
+		VSYN <= (vcnt < VS_B) ^ (vcnt < VS_E) ^ (VS_B < VS_E);
+		oRGB <= (hblack|VBLK) ? 12'h0 : iRGB;
 	end
 end
 endmodule
