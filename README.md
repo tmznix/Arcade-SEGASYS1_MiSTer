@@ -38,23 +38,30 @@ Currently supported System 1 titles:
 Currently supported SEGA System 2 titles and versions of System 1 games:
 
 * Choplifter
+* DakkoChan House
 * Wonder Boy
+* Toki no Senshi - Chrono Soldier
+* Ufo Senshi Yohko Chan
+* Wonder Boy in Monster Land
 
 Sega System 2 games currently **not yet** supported:
 
 * 119
-* DakkoChan House
 * Senryaku Game Bopeep
 * Shooting Master
-* Toki no Senshi - Chrono Soldier
-* Ufo Senshi Yohko Chan
 * Warball
-* Wonder Boy in Monster Land
 
 ## High score save/load
 
 * To save your scores use the 'Save Settings' option in the OSD
 * All games supported except Brain, Choplifter, Gardia, Heavy Metal, Water Match and Wonder Boy.
+
+## Quirks
+
+### UFO Senshi Yohko Chan
+
+* All DIP Switches in DSW1 set to ON: Test Mode
+* All DIP Switches in DSW0 set to ON: Inifinite Lifes
 
 ## ROM Files Instructions
 
@@ -67,9 +74,9 @@ The name of zip is taken from M.A.M.E. project, so you can get more info about h
 How to install:
 
 1. Update MiSTer binary to v200106 or later
-2. copy releases/*.mra to /media/fat/_Arcade
-3. copy releases/*.rbf to /media/fat/_Arcade/cores
-4. copy ROM zip files  to /media/fat/_Arcade/mame
+2. copy releases/\*.mra to /media/fat/\_Arcade
+3. copy releases/\*.rbf to /media/fat/\_Arcade/cores
+4. copy ROM zip files  to /media/fat/\_Arcade/mame
 
 Be sure to use the MRA file in "releases" of this repository.
 It does not guarantee the operation when using other MRA files.

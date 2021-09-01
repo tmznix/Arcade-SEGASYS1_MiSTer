@@ -19,7 +19,7 @@ module SEGASYS1_MAIN
 	input   [7:0]	DSW0,
 	input   [7:0]	DSW1,
 	input           system2,
-	input           nobo_memory,
+	input   [7:0]   quirks,
 
 	input				VBLK,
 	input				VIDCS,
@@ -46,6 +46,8 @@ module SEGASYS1_MAIN
 	input				HSWE
 );
 
+`include "quirks.vh"
+
 reg [3:0] clkdiv;
 always @(posedge CLK40M) clkdiv <= clkdiv+1'd1;
 wire CLK3M_EN = clkdiv[2:0] == 0;
@@ -61,9 +63,9 @@ wire	_cpu_rd, _cpu_wr;
 wire    [15:0] cpu_ad;
 
 // Invert address lines for Noboranka aka Zippy Bug
-assign  CPUAD = (nobo_memory && (cpu_ad[15:12] == 4'b1100 || cpu_ad[15:12] == 4'b1111)) ?
-		cpu_ad ^ 16'h3000 :
-		cpu_ad;
+assign CPUAD = (quirks == NOBORANKA) && (cpu_ad[15:14] == 2'b11) && (cpu_ad[13] == cpu_ad[12]) ?
+               cpu_ad ^ 16'h3000 :
+               cpu_ad;
 
 Z80IP maincpu(
 	.reset(RESET),
@@ -85,8 +87,8 @@ Z80IP maincpu(
 assign CPUWR = _cpu_wr & cpu_mreq;
 
 // Input Port
-wire			cpu_cs_port;
-wire [7:0]	cpu_rd_port;
+wire       cpu_cs_port;
+wire [7:0] cpu_rd_port;
 SEGASYS1_IPORT port(CPUAD,cpu_iorq, INP0,INP1,INP2, DSW0,DSW1, cpu_cs_port,cpu_rd_port);
 
 

@@ -17,7 +17,9 @@ module SEGASYSTEM1
 
 	input   system2,
 	input   rowscroll,
-	input   nobo_memory,
+	input   [7:0]  quirks,
+
+	output  mux_clock,
 
 	input   [8:0]  PH,         // PIXEL H
 	input   [8:0]  PV,         // PIXEL V
@@ -45,12 +47,15 @@ module SEGASYSTEM1
 	,input [2:0] test4
 	);
 
+`include "quirks.vh"
+
 // CPU
 wire [15:0] CPUAD;
 wire  [7:0] CPUDO,VIDDO,SNDNO,VIDMD,SNDCTL;
 wire			CPUWR,VIDCS,VBLK;
 wire			SNDRQ;
 
+assign mux_clock = VIDMD[1];
 
 // HISCORE MUX
 wire [7:0]	HSDO_MAIN;
@@ -68,7 +73,7 @@ SEGASYS1_MAIN Main (
 	.INP0(INP0),.INP1(INP1),.INP2(INP2),
 	.DSW0(DSW0),.DSW1(DSW1),
 	.system2(system2),
-	.nobo_memory(nobo_memory),
+	.quirks(quirks),
 	.CPUAD(CPUAD),.CPUDO(CPUDO),.CPUWR(CPUWR),
 	.VBLK(VBLK),.VIDCS(VIDCS),.VIDDO(VIDDO),
 	.SNDRQ(SNDRQ),.SNDNO(SNDNO),
@@ -78,7 +83,6 @@ SEGASYS1_MAIN Main (
 	
 	.PAUSE_N(PAUSE_N),
 	.HSAD(HSAD),.HSDO(HSDO_MAIN),.HSDI(HSDI),.HSWE(HSWE_MAIN & HSWE)
-	
 );
 
 // Video

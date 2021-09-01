@@ -158,6 +158,8 @@ module emu
 	input         OSD_STATUS
 );
 
+`include "rtl/quirks.vh"
+
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
@@ -197,6 +199,8 @@ localparam CONF_STR = {
 	"OOR,Analog Video H-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"OSV,Analog Video V-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"-;",
+	"O8,Service,Off,On;",
+	"O9,Test,Off,On;",
 	"R0,Reset;",
 	"J1,Trig1,Trig2,Trig3,Trig4,Trig5,Start 1P,Start 2P,Coin,Pause;",
 	"jn,A,B,X,,,Start,Select,R,L;",
@@ -288,6 +292,14 @@ always @(posedge clk_sys) begin
 	end
 end
 
+wire key_start1;
+wire key_start2;
+wire key_coin1;
+wire key_coin2;
+wire key_test;
+wire key_reset;
+wire key_service;
+
 wire m_lup    = joy1[3];
 wire m_ldown  = joy1[2];
 wire m_lleft  = joy1[1];
@@ -306,10 +318,14 @@ wire m_trig_1 = joy[4];
 wire m_trig_2 = joy[5];
 wire m_trig_3 = joy[6];
 
-wire m_start1 = joy[9];
-wire m_start2 = joy[10];
-wire m_coin   = joy[11];
+wire m_start1 = joy1[9] | joy2[10] | key_start1;
+wire m_start2 = joy1[10] | joy2[9] | key_start2;
+wire m_coin1  = joy1[11] | key_coin1;
+wire m_coin2  = joy2[11] | key_coin2;
 wire m_pause  = joy[12];
+
+wire m_service = key_service || status[8];
+wire m_test = key_test || status[9];
 
 // PAUSE SYSTEM
 reg pause;					// Pause signal (active-high)
@@ -404,25 +420,95 @@ assign AUDIO_S = 0; // unsigned PCM
 
 ///////////////////////////////////////////////////
 
-wire iRST = RESET | status[0] | buttons[1];
+wire iRST = RESET | status[0] | buttons[1] | key_reset;
 wire [2:0] triggers = {SYSMODE[0][7] ? {m_trig_2, m_trig_1} : {m_trig_1, m_trig_2}, m_trig_3};
+wire [7:0] quirks = SYSMODE[1];
+wire mux_clock, mux_clock_r;
+
+// Keyboard support for (DakkoChan House) mahjong game
+wire [7:0] dak_keys[6:0];
+assign dak_keys[6][0] = m_start1 || m_start2;
+
+wire pressed = ps2_key[9];
+wire [8:0] code = ps2_key[8:0];
+always @(posedge clk_sys) begin
+        reg old_state;
+        old_state <= ps2_key[10];
+        if(old_state != ps2_key[10]) begin
+                case(code)
+                        'h16: key_start1  <= pressed; // 1
+                        'h1E: key_start2  <= pressed; // 2
+                        'h2E: key_coin1   <= pressed; // 5
+                        'h36: key_coin2   <= pressed; // 6
+                        'h06: key_test    <= pressed; // F2
+                        'h04: key_reset   <= pressed; // F3
+                        'h46: key_service <= pressed; // 9
+
+                        'h01c: dak_keys[2][0] <= pressed; // a
+                        'h032: dak_keys[2][1] <= pressed; // b
+                        'h021: dak_keys[2][2] <= pressed; // c
+                        'h023: dak_keys[2][3] <= pressed; // d
+                        'h111: dak_keys[2][4] <= pressed; // ralt = last chance
+
+                        'h024: dak_keys[3][0] <= pressed; // e
+                        'h02b: dak_keys[3][1] <= pressed; // f
+                        'h034: dak_keys[3][2] <= pressed; // g
+                        'h033: dak_keys[3][3] <= pressed; // h
+
+                        'h043: dak_keys[4][0] <= pressed; // i
+                        'h03b: dak_keys[4][1] <= pressed; // j
+                        'h042: dak_keys[4][2] <= pressed; // k
+                        'h04b: dak_keys[4][3] <= pressed; // l
+
+                        'h03a: dak_keys[5][0] <= pressed; // m
+                        'h031: dak_keys[5][1] <= pressed; // n
+                        'h029: dak_keys[5][2] <= pressed; // chi = space
+                        'h011: dak_keys[5][3] <= pressed; // pon = lalt
+                        'h035: dak_keys[5][4] <= pressed; // flip-flop = y
+
+                        'h026: dak_keys[6][1] <= pressed; // bet = 3
+
+                        'h014: dak_keys[0][0] <= pressed; // kan = lctrl
+                        'h012: dak_keys[0][1] <= pressed; // reach = lshift
+                        'h01a: dak_keys[0][2] <= pressed; // ron = z
+                endcase
+        end
+end
 
 reg [7:0] INP0, INP1, INP2;
+reg [7:0] mux_shift;
+reg [2:0] mux_cnt;
 always @(posedge clk_sys) begin
-	if (SYSMODE[0][5]) begin
+	if (RESET && (quirks == DAKKOCHAN)) begin
+		mux_shift <= 8'h1 << status[12:10];
+		mux_cnt <= status[12:10];
+	end
+	else if (SYSMODE[0][5]) begin
 		INP0 = ~spin;
 		INP1 = ~spin;
-		INP2 = ~{m_trig_1 || ps2_mouse[2:0], m_trig_1 || ps2_mouse[2:0], m_start2, m_start1, 3'b000, m_coin};
+		INP2 = ~{m_trig_1 || ps2_mouse[2:0], m_trig_1 || ps2_mouse[2:0], m_start2, m_start1, 3'b00, m_coin2, m_coin1};
 	end
 	else if (SYSMODE[0][3]) begin
 		INP0 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
 		INP1 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
-		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 3'b000, m_coin};
+		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 2'b00, m_coin2, m_coin1};
+	end
+	// Dakkochan House mux
+	else if (quirks == DAKKOCHAN) begin
+		if (mux_clock && !mux_clock_r) begin
+			mux_shift <= {1'b0,mux_shift[5:0],mux_shift[6]};
+			mux_cnt <= (mux_cnt+1) % 7;
+		end
+
+		INP0 = ~dak_keys[mux_cnt];
+		INP1 = mux_shift;
+		INP2 = ~{m_trig, m_trig, 2'b00, m_service, m_test, m_coin2, m_coin1};
+		mux_clock_r <= mux_clock;
 	end
 	else begin
 		INP0 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
 		INP1 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
-		INP2 = ~{2'b00, m_start2, m_start1, 3'b000, m_coin};
+		INP2 = ~{2'b00, m_start2, m_start1, m_service, m_test, m_coin2, m_coin1};
 	end
 end
 
@@ -465,7 +551,9 @@ SEGASYSTEM1 GameCore
 
 	.system2(SYSMODE[0][0]),
 	.rowscroll(SYSMODE[0][6]),
-	.nobo_memory(SYSMODE[1][0]),
+	.quirks(quirks),
+
+	.mux_clock(mux_clock),
 
 	.PH(HPOS),
 	.PV(VPOS),
