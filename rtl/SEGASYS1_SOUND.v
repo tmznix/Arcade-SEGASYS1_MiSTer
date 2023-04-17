@@ -1,10 +1,10 @@
 // Copyright (c) 2017,19 MiSTer-X
 
-`define EN_SCPU	(ROMAD[17:13]==5'b00_110)	// $0C000-$0DFFF
+`define EN_SCPU	(ROMAD[18:15]==4'b000_0) // $0-$7fff
 
 module SEGASYS1_SOUND
 (
-	input         clk48M,
+	input         clk40M,
 	input         reset,
 
 	input   [7:0] sndno,
@@ -23,7 +23,7 @@ module SEGASYS1_SOUND
 //  ClockGen
 //----------------------------------
 wire clk8M_en,clk4M_en,clk2M_en;
-SndClkGen clkgen(clk48M,clk8M_en,clk4M_en,clk2M_en);
+SndClkGen clkgen(clk40M,clk8M_en,clk4M_en,clk2M_en);
 
 
 //----------------------------------
@@ -42,7 +42,7 @@ SndADec adec(
 );
 
 Z80IP cpu(
-	.clk(clk48M),
+	.clk(clk40M),
 	.clk_en(clk4M_en & cpuwait_n),
 	.reset(reset),
 	.adr(cpu_ad),
@@ -63,8 +63,8 @@ wire  [7:0]		rom_dt;		// ROM
 wire  [7:0]		ram_do;		// RAM
 wire  [7:0]		comlatch;	// Sound Command Latch
 
-DLROM #(13,8) subir( clk48M, cpu_ad[12:0], rom_dt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SCPU );
-SRAM_2048 wram( clk48M, cpu_ad[10:0], ram_do, cpu_wr_ram, cpu_do );
+DLROM #(15,8) subir( clk40M, cpu_ad[14:0], rom_dt, ROMCL,ROMAD,ROMDT,ROMEN & `EN_SCPU );
+SRAM_2048 wram( clk40M, cpu_ad[10:0], ram_do, cpu_wr_ram, cpu_do );
 
 dataselector3 scpudisel(
 	cpu_di,
@@ -76,7 +76,7 @@ dataselector3 scpudisel(
 
 
 SndPlayReq sndreq (
-	clk48M, clk8M_en, reset,
+	clk40M, clk8M_en, reset,
 	sndno, sndstart,
 	cpu_irq, cpu_irqa,
 	cpu_nmi, cpu_nmia,
@@ -92,7 +92,7 @@ wire       psg0wait, psg1wait;
 wire       cpuwait_n = psg0wait & psg1wait;
 
 sn76489_top psg0(
-	.clock_i(clk48M),
+	.clock_i(clk40M),
 	.clock_en_i(clk2M_en),
 	.res_n_i(~reset),
 	.ce_n_i(~(cpu_cs_psg0 & cpu_mreq)),
@@ -103,7 +103,7 @@ sn76489_top psg0(
 );
 
 sn76489_top psg1(
-	.clock_i(clk48M),
+	.clock_i(clk40M),
 	.clock_en_i(clk4M_en),
 	.res_n_i(~reset),
 	.ce_n_i(~(cpu_cs_psg1 & cpu_mreq)),
@@ -121,21 +121,21 @@ endmodule
 
 module SndClkGen
 (
-	input     clk48M,
+	input     clk40M,
 	output    clk8M_en,
 	output    clk4M_en,
 	output    clk2M_en
 );
 
 reg [4:0] count;
-always @( posedge clk48M ) begin
+always @( posedge clk40M ) begin
 	count <= count + 1'd1;
-	if (count == 23) count <= 0;
+	if (count == 19) count <= 0;
 end
 
 assign clk2M_en = count == 0;
-assign clk4M_en = count == 0 || count == 12;
-assign clk8M_en = count == 0 || count == 6 || count == 12 || count == 18;
+assign clk4M_en = count == 0 || count == 10;
+assign clk8M_en = count == 0 || count == 5 || count == 10 || count == 15;
 
 endmodule
 

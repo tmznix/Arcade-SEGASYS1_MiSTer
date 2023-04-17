@@ -159,21 +159,28 @@ module emu
 	input         OSD_STATUS
 );
 
+`include "rtl/quirks.vh"
+
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
 
-assign VGA_F1    = 0;
-assign VGA_SCALER= 0;
+assign VGA_F1 = 0;
+assign VGA_SCALER = 0;
+assign HDMI_FREEZE = 0;
+
 assign USER_OUT  = '1;
+
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
+
 assign BUTTONS   = 0;
+
 assign AUDIO_MIX = 0;
 assign FB_FORCE_BLANK = '0;
 
-wire screen_H = status[6]|~SYSMODE[1]|direct_video;
+wire screen_H = status[6]|~SYSMODE[0][1]|direct_video;
 wire [1:0] ar = status[15:14];
 
 assign VIDEO_ARX = (!ar) ? (screen_H ? 12'd2400 : 12'd2191) : (ar - 1'd1);
@@ -181,62 +188,69 @@ assign VIDEO_ARY = (!ar) ? (screen_H ? 12'd2191 : 12'd2400) : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"A.SEGASYS1;;",
+	"a.segasys1+2;;",
 	"-;",
 	"H0OEF,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"H0O6,Orientation,Vert,Horz;", 
+	"H0O6,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"O7,Pause when OSD is open,On,Off;",
 	"-;",
 	"DIP;",
 	"-;",
-	"OOS,Analog Video H-Pos,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31;",
-	"OTV,Analog Video V-Pos,0,1,2,3,4,5,6,7;",
+	"OOR,Analog Video H-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
+	"OSV,Analog Video V-Pos,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"-;",
+	"O8,Service,Off,On;",
+	"O9,Test,Off,On;",
 	"R0,Reset;",
 	"J1,Trig1,Trig2,Trig3,Trig4,Trig5,Start 1P,Start 2P,Coin,Pause;",
 	"jn,A,B,X,,,Start,Select,R,L;",
 	"V,v",`BUILD_DATE
 };
 
-wire [4:0] HOFFS = status[28:24];
-wire [2:0] VOFFS = status[31:29];
+wire [3:0] HOFFS = status[27:24];
+wire [3:0] VOFFS = status[31:28];
 
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_48M;
-wire clk_hdmi = clk_48M;
-wire clk_sys  = clk_48M;
+// MAME sources mention 20MHz, 8MHz crystals and 5Mhz pixel clock.
+// 40MHz sys clock should get them all covered.
+
+wire clk_40M;
+wire clk_hdmi = clk_40M;
+wire clk_sys  = clk_40M;
 
 pll pll
 (
 	.rst(0),
 	.refclk(CLK_50M),
-	.outclk_0(clk_48M)
+	.outclk_0(clk_40M)
 );
 
 ///////////////////////////////////////////////////
 
-wire	[31:0]	status;
-wire	[1:0]		buttons;
-wire				forced_scandoubler;
-wire				direct_video;
+wire    [31:0]  status;
+wire     [1:0]  buttons;
+wire    [10:0]  ps2_key;
 
-wire				ioctl_download;
-wire				ioctl_upload;
-wire				ioctl_wr;
-wire	[7:0]		ioctl_index;
-wire	[24:0]	ioctl_addr;
-wire	[7:0]		ioctl_dout;
-wire	[7:0]		ioctl_din;
+wire            forced_scandoubler;
+wire            direct_video;
 
-wire	[15:0]	joy1, joy2;
-wire	[15:0]	joy = joy1 | joy2;
-wire	[8:0]		spinner_0, spinner_1;
-wire	[24:0]	ps2_mouse;
+wire            ioctl_download;
+wire            ioctl_upload;
+wire            ioctl_wr;
+wire    [7:0]   ioctl_index;
+wire    [24:0]  ioctl_addr;
+wire    [7:0]   ioctl_dout;
+wire    [7:0]   ioctl_din;
 
-wire	[21:0]	gamma_bus;
+wire    [15:0]  joy1, joy2;
+wire    [15:0]  joy = joy1 | joy2;
+wire    [8:0]   spinner_0, spinner_1;
+wire    [24:0]  ps2_mouse;
+
+wire    [21:0]  gamma_bus;
 
 hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
@@ -261,6 +275,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
 
+	.ps2_key(ps2_key),
 	.ps2_mouse(ps2_mouse),
 	.joystick_0(joy1),
 	.joystick_1(joy2),
@@ -268,14 +283,24 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.spinner_1(spinner_1)
 );
 
-reg [7:0] SYSMODE;	// [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6] HS start delay for TeddyBoy Blues (27 seconds!)
-reg [7:0] DSW[8];
+// SYSMODE[0]: [0]=SYS1/SYS2,[1]=H/V,[2]=H256/H240,[3]=water match control,[4]=CW/CCW,[5]=spinner,[6]=SYS2 rowscroll,[7] button1&2 swap
+// SYSMODE[1]: [0]=Noboranka memory layout
+reg [7:0] SYSMODE[4];
+reg [7:0] DSW[2];
 always @(posedge clk_sys) begin
 	if (ioctl_wr) begin
-		if ((ioctl_index==1  ) && (ioctl_addr==0))   SYSMODE <= ioctl_dout;
-		if ((ioctl_index==254) && !ioctl_addr[24:3]) DSW[ioctl_addr[2:0]] <= ioctl_dout;
+		if ((ioctl_index==1  ) && !ioctl_addr[24:2]) SYSMODE[ioctl_addr[1:0]] <= ioctl_dout;
+		if ((ioctl_index==254) && !ioctl_addr[24:1]) DSW[ioctl_addr[0]] <= ioctl_dout;
 	end
 end
+
+wire key_start1;
+wire key_start2;
+wire key_coin1;
+wire key_coin2;
+wire key_test;
+wire key_reset;
+wire key_service;
 
 wire m_lup    = joy1[3];
 wire m_ldown  = joy1[2];
@@ -295,17 +320,21 @@ wire m_trig_1 = joy[4];
 wire m_trig_2 = joy[5];
 wire m_trig_3 = joy[6];
 
-wire m_start1 = joy[9];
-wire m_start2 = joy[10];
-wire m_coin   = joy[11];
+wire m_start1 = joy1[9] | joy2[10] | key_start1;
+wire m_start2 = joy1[10] | joy2[9] | key_start2;
+wire m_coin1  = joy1[11] | key_coin1;
+wire m_coin2  = joy2[11] | key_coin2;
 wire m_pause  = joy[12];
 
+wire m_service = key_service || status[8];
+wire m_test = key_test || status[9];
+
 // PAUSE SYSTEM
-reg				pause;									// Pause signal (active-high)
-reg				pause_toggle = 1'b0;					// User paused (active-high)
-reg [31:0]		pause_timer;							// Time since pause
-reg [31:0]		pause_timer_dim = 31'h1C9C3800;	// Time until screen dim (10 seconds @ 48Mhz)
-reg 				dim_video = 1'b0;						// Dim video output (active-high)
+reg pause;					// Pause signal (active-high)
+reg pause_toggle = 1'b0;			// User paused (active-high)
+reg [31:0] pause_timer;				// Time since pause
+reg [31:0] pause_timer_dim = 31'h17d78400;	// Time until screen dim (10 seconds @ 40Mhz)
+reg dim_video = 1'b0;				// Dim video output (active-high)
 
 // Pause when highscore module requires access, user has pressed pause, or OSD is open and option is set
 assign pause = hs_access | pause_toggle  | (OSD_STATUS && ~status[7]);
@@ -333,9 +362,8 @@ end
 wire hblank, vblank;
 wire ce_vid;
 wire hs, vs;
-wire [2:0] r,g;
-wire [1:0] b;
-wire [7:0] rgb_out = dim_video ? {r >> 1,g >> 1, b >> 1} : {r,g,b};
+wire [3:0] r,g,b;
+wire [11:0] rgb_out = dim_video ? {r >> 1,g >> 1, b >> 1} : {r,g,b};
 
 reg ce_pix;
 always @(posedge clk_hdmi) begin
@@ -344,7 +372,7 @@ always @(posedge clk_hdmi) begin
 	ce_pix  <= old_clk & ~ce_vid;
 end
 
-arcade_video #(288,8) arcade_video
+arcade_video #(288,12) arcade_video
 (
 	.*,
 
@@ -361,14 +389,14 @@ arcade_video #(288,8) arcade_video
 
 
 wire no_rotate = screen_H;
-wire rotate_ccw = ~SYSMODE[4];
+wire rotate_ccw = ~SYSMODE[0][4];
 wire flip = 0;
 wire video_rotated;
 screen_rotate screen_rotate (.*);
 
 wire			PCLK_EN;
 wire  [8:0] HPOS,VPOS;
-wire  [7:0] POUT;
+wire  [11:0] POUT;
 HVGEN hvgen
 (
 	.HPOS(HPOS),
@@ -381,7 +409,7 @@ HVGEN hvgen
 	.VBLK(vblank),
 	.HSYN(hs),
 	.VSYN(vs),
-	.H240(SYSMODE[2]),
+	.H240(SYSMODE[0][2]),
 	.HOFFS(HOFFS),
 	.VOFFS(VOFFS)
 );
@@ -396,24 +424,95 @@ assign AUDIO_S = 0; // unsigned PCM
 
 ///////////////////////////////////////////////////
 
-wire iRST = RESET | status[0] | buttons[1];
+wire iRST = RESET | status[0] | buttons[1] | key_reset;
+wire [2:0] triggers = {SYSMODE[0][7] ? {m_trig_2, m_trig_1} : {m_trig_1, m_trig_2}, m_trig_3};
+wire [7:0] quirks = SYSMODE[1];
+wire mux_clock, mux_clock_r;
+
+// Keyboard support for (DakkoChan House) mahjong game
+wire [7:0] dak_keys[6:0];
+assign dak_keys[6][0] = m_start1 || m_start2;
+
+wire pressed = ps2_key[9];
+wire [8:0] code = ps2_key[8:0];
+always @(posedge clk_sys) begin
+        reg old_state;
+        old_state <= ps2_key[10];
+        if(old_state != ps2_key[10]) begin
+                case(code)
+                        'h16: key_start1  <= pressed; // 1
+                        'h1E: key_start2  <= pressed; // 2
+                        'h2E: key_coin1   <= pressed; // 5
+                        'h36: key_coin2   <= pressed; // 6
+                        'h06: key_test    <= pressed; // F2
+                        'h04: key_reset   <= pressed; // F3
+                        'h46: key_service <= pressed; // 9
+
+                        'h01c: dak_keys[2][0] <= pressed; // a
+                        'h032: dak_keys[2][1] <= pressed; // b
+                        'h021: dak_keys[2][2] <= pressed; // c
+                        'h023: dak_keys[2][3] <= pressed; // d
+                        'h111: dak_keys[2][4] <= pressed; // ralt = last chance
+
+                        'h024: dak_keys[3][0] <= pressed; // e
+                        'h02b: dak_keys[3][1] <= pressed; // f
+                        'h034: dak_keys[3][2] <= pressed; // g
+                        'h033: dak_keys[3][3] <= pressed; // h
+
+                        'h043: dak_keys[4][0] <= pressed; // i
+                        'h03b: dak_keys[4][1] <= pressed; // j
+                        'h042: dak_keys[4][2] <= pressed; // k
+                        'h04b: dak_keys[4][3] <= pressed; // l
+
+                        'h03a: dak_keys[5][0] <= pressed; // m
+                        'h031: dak_keys[5][1] <= pressed; // n
+                        'h029: dak_keys[5][2] <= pressed; // chi = space
+                        'h011: dak_keys[5][3] <= pressed; // pon = lalt
+                        'h035: dak_keys[5][4] <= pressed; // flip-flop = y
+
+                        'h026: dak_keys[6][1] <= pressed; // bet = 3
+
+                        'h014: dak_keys[0][0] <= pressed; // kan = lctrl
+                        'h012: dak_keys[0][1] <= pressed; // reach = lshift
+                        'h01a: dak_keys[0][2] <= pressed; // ron = z
+                endcase
+        end
+end
 
 reg [7:0] INP0, INP1, INP2;
+reg [7:0] mux_shift;
+reg [2:0] mux_cnt;
 always @(posedge clk_sys) begin
-	if (SYSMODE[5]) begin
+	if (RESET && (quirks == DAKKOCHAN)) begin
+		mux_shift <= 8'h1 << status[12:10];
+		mux_cnt <= status[12:10];
+	end
+	else if (SYSMODE[0][5]) begin
 		INP0 = ~spin;
 		INP1 = ~spin;
-		INP2 = ~{m_trig_1 || ps2_mouse[2:0], m_trig_1 || ps2_mouse[2:0], m_start2, m_start1, 3'b000, m_coin};
+		INP2 = ~{m_trig_1 || ps2_mouse[2:0], m_trig_1 || ps2_mouse[2:0], m_start2, m_start1, 3'b00, m_coin2, m_coin1};
 	end
-	else if (SYSMODE[3]) begin
+	else if (SYSMODE[0][3]) begin
 		INP0 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
 		INP1 = ~{m_lleft, m_lright, m_lup, m_ldown, m_rleft, m_rright, m_rup, m_rdown};
-		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 3'b000, m_coin};
+		INP2 = ~{m_trig, m_trig, m_start2, m_start1, 2'b00, m_coin2, m_coin1};
+	end
+	// Dakkochan House mux
+	else if (quirks == DAKKOCHAN) begin
+		if (mux_clock && !mux_clock_r) begin
+			mux_shift <= {1'b0,mux_shift[5:0],mux_shift[6]};
+			mux_cnt <= (mux_cnt+1) % 7;
+		end
+
+		INP0 = ~dak_keys[mux_cnt];
+		INP1 = mux_shift;
+		INP2 = ~{m_trig, m_trig, 2'b00, m_service, m_test, m_coin2, m_coin1};
+		mux_clock_r <= mux_clock;
 	end
 	else begin
-		INP0 = ~{m_left, m_right, m_up, m_down,1'd0, m_trig_2, m_trig_1, m_trig_3};
-		INP1 = ~{m_left, m_right, m_up, m_down,1'd0, m_trig_2, m_trig_1, m_trig_3};
-		INP2 = ~{2'b00, m_start2, m_start1, 3'b000, m_coin}; 
+		INP0 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
+		INP1 = ~{m_left, m_right, m_up, m_down,1'd0, triggers};
+		INP2 = ~{2'b00, m_start2, m_start1, m_service, m_test, m_coin2, m_coin1};
 	end
 end
 
@@ -435,17 +534,17 @@ reg use_mouse = 0;
 always @(posedge clk_sys) begin
 	reg old_ms;
 	reg old_sp;
-	
+
 	old_ms <= ps2_mouse[24];
 	if(old_ms ^ ps2_mouse[24]) use_mouse = 1;
-	
+
 	old_sp <= spinner_0[8];
 	if(old_sp ^ spinner_0[8]) use_mouse = 0;
 end
 
 SEGASYSTEM1 GameCore
-( 
-	.clk48M(clk_sys),
+(
+	.clk40M(clk_sys),
 	.reset(iRST),
 
 	.INP0(INP0),
@@ -453,6 +552,12 @@ SEGASYSTEM1 GameCore
 	.INP2(INP2),
 	.DSW0(DSW[0]),
 	.DSW1(DSW[1]),
+
+	.system2(SYSMODE[0][0]),
+	.rowscroll(SYSMODE[0][6]),
+	.quirks(quirks),
+
+	.mux_clock(mux_clock),
 
 	.PH(HPOS),
 	.PV(VPOS),
@@ -464,7 +569,7 @@ SEGASYSTEM1 GameCore
 	.ROMAD(ioctl_addr),
 	.ROMDT(ioctl_dout),
 	.ROMEN(ioctl_wr & ioctl_index==0),
-	
+
 	.PAUSE_N(~pause),
 	.HSAD(hs_address),
 	.HSDO(ioctl_din),
@@ -499,6 +604,5 @@ hiscore #(
 	.ram_write(hs_write),
 	.ram_access(hs_access)
 );
-
 
 endmodule

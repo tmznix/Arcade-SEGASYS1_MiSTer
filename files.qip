@@ -6,6 +6,7 @@ set_global_assignment -name VERILOG_FILE rtl/SEGASYS1_SPRITE.v
 set_global_assignment -name VERILOG_FILE rtl/SEGASYS1_SOUND.v
 set_global_assignment -name VERILOG_FILE rtl/SEGASYS1_MAIN.v
 set_global_assignment -name VERILOG_FILE rtl/SEGASYS1.v
+set_global_assignment -name VERILOG_FILE rtl/MC8123.v
 set_global_assignment -name VERILOG_FILE rtl/z80ip.v
 set_global_assignment -name VERILOG_FILE rtl/parts.v
 set_global_assignment -name VERILOG_FILE rtl/spinner.sv

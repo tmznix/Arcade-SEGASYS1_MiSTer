@@ -7,6 +7,8 @@ module SEGASYS1_SPRITE
 	input          VCLKx4_EN,
 	input          VCLK_EN,
 
+	input   	system2,
+
 	input  	[8:0]		PH,
 	input  	[8:0]		PV,
 
@@ -61,7 +63,7 @@ wire side = VPOS[0];
 
 reg   [9:0] rad0,rad1=1;
 LineBuf lbuf(
-	VCLKx8, rad0, (rad0==rad1), sprpx, 
+	VCLKx8, rad0, (rad0==rad1), sprpx,
 	VCLKx8, {~side,xpos}, wdat, we & (wdat[3:0] != 4'h0), _prevpix
 );
 always @(posedge VCLKx8) begin
@@ -107,7 +109,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 						hitsprnum[hits] <= spr_num;
 						hitsprvps[hits] <= (svpos-sprdt[7:0])+1'd1;
 						hits <= hits+1'd1;
-					end	
+					end
 				end
 				phaseHB <= ( spr_num == `SPEND ) ? 2'h2 : 2'h1;
 				spr_num <= spr_num+1'd1;
@@ -115,7 +117,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 
 			default:;
 
-		endcase 
+		endcase
 
 	end
 
@@ -144,7 +146,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 			// get yofs/xpos/bank
 			2: begin
 				yofs <= hitsprvps[hitr];
-				xpos <= sprdt[8:1]+4'd14;
+				xpos <= sprdt[8:1] + sprdt[0] + (system2 ? 21 : 14);
 				bank <= { sprdt[13], sprdt[14], sprdt[15] };
 				spr_ofs <= 2;
 				phaseHD <= 3;
@@ -164,7 +166,7 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 				waitcnt <= 8; // wait for sprite data after address setup
 				phaseHD <= 6;
 			end
-			
+
 			// rendering to linebuf
 			6: begin
 				if (waitcnt == 0) begin
@@ -236,14 +238,14 @@ always @ ( posedge VCLKx8 ) if (VCLKx4_EN) begin
 				phaseHD <= ( hitr == (hits-1) ) ? 15 : 1;
 				hitr <= hitr+1'd1;
 			end
-			
+
 			default: begin
 				we      <= 1'b0;
 				sprcoll <= 1'b0;
 			end
 
 		endcase
-		
+
 	end
 end
 
