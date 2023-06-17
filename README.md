@@ -1,6 +1,6 @@
 # [Arcade: SEGA System 1](https://www.system16.com/hardware.php?id=693) and [2](https://www.system16.com/hardware.php?id=694) for the [MiSTer](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
-by [MiSTer-X](https://twitter.com/mrx_8b)
+by [MiSTer-X](https://twitter.com/mrx_8b) and [blackwine](https://twitter.com/blk_yn)
 
 ## Specifications
 
